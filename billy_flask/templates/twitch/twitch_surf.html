@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TwitchSurf</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='twitch/favicon.ico') }}">
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ url_for('static', filename='twitch/main.css') }}" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://player.twitch.tv/js/embed/v1.js"></script>
+    <script src="https://twitter.github.io/typeahead.js/releases/latest/typeahead.bundle.js"></script>
+    <script type=text/javascript defer="defer">
+var fetchUrl = "{{ url_for('.get_stream') }}";
+var fetchRandomUrl = "{{ url_for('.get_random_stream') }}";
+var streamStack = [];
+var forwardStack = [];
+var badGames = [];
+var pushedStream = null;
+var groupRoom = null;
+var bgColor, currentStream, player, updateInterval, groupListen, bloodHound;
+
+function newStream(streamObject, buttonPressed) {
+    if (!buttonPressed) {
+        if (currentStream) {
+            streamStack.push(currentStream);
+            while (streamStack.length > 10) {
+                streamStack.shift();
+            }
+        }
+        forwardStack = [];
+    }
+    if (updateInterval) {
+        clearInterval(updateInterval);
+    }
+    currentStream = streamObject;
+    var game = (currentStream.game) ? currentStream.game : '';
+    $('#name').text(currentStream.channel.display_name);
+    updateElements(game, currentStream.viewers);
+    if (! player) {
+        var options = {
+            width: $('#wrapper').width(),
+            height: $('#wrapper').height(),
+            channel: currentStream.channel.name
+        };
+        player = new Twitch.Player("player", options);
+        player.setQuality("chunked");
+    } else {
+        player.setChannel(currentStream.channel.name);
+    }
+    updateInterval = setInterval(updateStreamData, 10000);
+    $(document).prop('title','TwitchSurf: ' + currentStream.channel.display_name);
+}
+
+function getRandom(game) {
+    var text = $('#random').text();
+    $('#random').text('Surfing...');
+    $('#random').prop('disabled', true);
+    $.ajax({
+        url: fetchRandomUrl,
+        data: {
+            game: (game) ? game : null,
+            lang: ($('#eng').prop("checked")) ? "en" : null,
+            previd: (currentStream) ? currentStream.channel._id : null
+        },
+        success: function(result) {
+            if (badGames.indexOf(result.game) >= 0) {
+                getRandom();
+            } else if (! currentStream) {
+                newStream(result);
+            } else if (result.channel._id != currentStream.channel._id) {
+                newStream(result);
+            }
+        },
+        complete: function() {
+            $('#random').prop('disabled', false);
+            $('#random').text(text);
+        }
+    });
+}
+
+function backButton() {
+    if (streamStack.length > 0) {
+        forwardStack.push(currentStream);
+        newStream(streamStack.pop(), 'back');
+    }
+}
+
+function forwardButton() {
+    if (forwardStack.length > 0) {
+        streamStack.push(currentStream);
+        newStream(forwardStack.pop(), 'forward');
+    }
+}
+
+function copyTextToClipboard(text) {
+    var textArea = document.createElement("textarea");
+    textArea.style.position = 'fixed';
+    textArea.style.top = 0;
+    textArea.style.right = 0;
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = 0;
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+        var successful = document.execCommand('copy');
+        var msg = successful ? 'successful' : 'unsuccessful';
+        if (successful) {
+            $('#streamlabel').html('<strong>URL copied</strong>');
+            setTimeout(function() {
+                $('#streamlabel').html('<strong>Stream:</strong>');
+            }, 3000);
+        }
+    } catch (err) {
+        console.log('Oops, unable to copy');
+    }
+    document.body.removeChild(textArea);
+}
+
+function updateStreamData() {
+    if (currentStream) {
+        $.ajax({
+            url: fetchUrl,
+            data: {
+                channel: currentStream.channel._id
+            },
+            success: function(result) {
+                if (currentStream.channel._id === result.stream.channel._id) {
+                    currentStream = result.stream;
+                    updateElements(currentStream.game, currentStream.viewers);
+                }
+            }
+        });
+    }
+}
+
+function pullGroupStream(streamId) {
+    $.ajax({
+        url: fetchUrl,
+        data: {
+            channel: streamId
+        },
+        success: function(result) {
+            if (result.stream) {
+                newStream(result.stream);
+            }
+        }
+    });
+}
+
+function updateElements(game, viewers) {
+    $('#viewers').text(viewers);
+    $('#game').text((game) ? game : 'n/a');
+    $('#game').prop('href', 'https://www.twitch.tv' + ((game) ? ('/directory/game/' + game) : ''));
+    $('#blacklist').prop('disabled', (game) ? false : true);
+    $('#blacklist').prop('title', (game) ? `Add ${game} to the blacklist` : '');
+    $('#whitelist').prop('disabled', (game) ? false : true);
+    $('#whitelist').prop('title', (game) ? `Find another ${game} stream` : '');
+}
+
+function startEventHandler() {
+    groupRoom = $('#groupcode').val();
+    var listenUrl = "{{ url_for('.group_event_stream') }}?room=" + groupRoom;
+	groupListen = new EventSource(listenUrl);
+	groupListen.onmessage = function(event) {
+        var pushedId = parseInt(event.data);
+		if ($('#groupenable').prop("checked")) {
+			var needPush = (pushedId !== pushedStream);
+			pushedStream = pushedId;
+			var currentId = (currentStream) ? currentStream.channel._id : null;
+			if (needPush && (currentId !== pushedStream)) {
+				pullGroupStream(pushedStream);
+				$('#random').prop('disabled', true);
+				$('#random').text('NEW STREAM');
+				$('#blacklist').prop('disabled', true);
+				$('#whitelist').prop('disabled', true);
+				$('body').css('backgroundColor', "#ffffff");
+				$('body').animate({
+					backgroundColor: bgColor
+				}, 1000);
+				setTimeout(function() {
+					$('#random').prop('disabled', false);
+					$('#random').text('Surf');
+					$('#blacklist').prop('disabled', false);
+					$('#whitelist').prop('disabled', false);
+				}, 3000);
+			}
+		}
+	};
+}
+
+$(document).ready(function() {
+    bgColor = $('body').css('backgroundColor');
+    if (! $('#groupenable').prop('checked')) {
+        $('#groupsection').hide();
+    } else {
+        startEventHandler();
+    }
+    $('#random').click(function() {
+        getRandom();
+    });
+    $('#back').click(function() {
+        backButton();
+    });
+    $('#forward').click(function() {
+        forwardButton();
+    });
+    $('#streamlabel').click(function() {
+        copyTextToClipboard(currentStream.channel.url);
+    });
+    $('#blacklist').click(function() {
+        if (currentStream.game) {
+            badGames.push(currentStream.game);
+        }
+        getRandom();
+    });
+    $('#whitelist').click(function() {
+        if (currentStream.game) {
+            getRandom(currentStream.game);
+        }
+    });
+    $(window).resize(function() {
+        if (player) {
+            player.setWidth($('#wrapper').width());
+            player.setHeight($('#wrapper').height());
+        }
+    });
+
+    bloodHound = new Bloodhound({
+        datumTokenizer: Bloodhound.tokenizers.whitespace,
+        queryTokenizer: Bloodhound.tokenizers.whitespace,
+        sufficient: 1,
+        prefetch: "{{ url_for('.get_top_games') }}",
+        remote: {
+            url: "{{ url_for('.search_games') }}" + '?query=%QUERY',
+            wildcard: '%QUERY'
+        }
+    });
+
+    $('#gametypeahead').typeahead({
+        hint: false,
+        highlight: true,
+        minLength: 2
+        },
+        {
+        name: 'gameslist',
+        source: bloodHound
+    });
+
+    $('#gametypeahead').bind('typeahead:select', function(event, selection) {
+        $('#gametypeahead').typeahead('val', '');
+        getRandom(selection);
+    });
+
+    $('#groupenable').click(function() {
+		if ($(this).prop('checked')) {
+			$('#groupsection').show();
+		} else {
+			$('#groupsection').hide();
+			groupListen.close();
+		}
+    });
+
+    $('#grouproomsubmit').click(function() {
+        startEventHandler();
+    })
+    
+    $('#grouppush').click(function() {
+        if (player) {
+			$.ajax({
+				url: "{{ url_for('.group_update') }}",
+				data: {
+                    room: groupRoom,
+					stream: currentStream.channel._id
+				},
+				success: function(result) {
+					console.log("Pushed stream successfully.");
+					pushedStream = parseInt(currentStream.channel._id);
+				}
+			});
+		}
+    });
+
+    $('#grouppull').click(function() {
+        var currentId = (currentStream) ? currentStream.channel._id : null;
+        if (pushedStream && currentId !== pushedStream) {
+			pullGroupStream(pushedStream);
+		}
+    });
+
+});
+    </script>
+</head>
+<body>
+    <div style="position:fixed; display:block; top:8px; left:8px; bottom:8px; width:180px;">
+        <div class="left">
+            <button id="back" class="twitchstyle" style="width: 20px; position:absolute" title="Previous stream"><</button>
+            <button id="random" class="twitchstyle" style="display:block; margin:auto; width:100px;">Surf</button>
+            <button id="forward" class="twitchstyle" style="width: 20px; position:absolute; left:160px" title="Next stream">></button>
+        </div>
+        <div class="left">
+            <label id="streamlabel" title="Click to copy stream URL to clipboard"><strong>Stream:</strong></label><div id="name" style="margin-top: 6px;">n/a</div>
+        </div>
+        <div class="left">
+            <label><strong>Viewers:</strong></label><div id="viewers" style="display:inline-block; margin-left:8px;">n/a</div>
+        </div>
+        <div class="left">
+            <label><strong>Game:</strong></label>
+            <button id="blacklist" class="gamebutton" title="Blacklist streams playing the current game "><strong>✗</strong></button>
+            <button id="whitelist" class="gamebutton" title="Find another stream playing the current game"><strong>✓</strong></button>
+            <a href="https://twitch.tv" id="game" class="left" style="margin-top: 6px;">n/a</a>
+        </div>
+        <div class="left">
+            <input id="gametypeahead" class="typeahead" type="text" placeholder="Filter by game...">
+        </div>
+        <div class="left">
+            <label><strong>Options:</strong></label><br>
+            <label><input type="checkbox" id="eng" style="margin-top: 6px;" checked="checked">English Only</label><br>
+            <label><input type="checkbox" id="groupenable" {% if room %}checked="checked"{% endif %} style="margin-top: 6px;">Group Mode</label>
+        </div>
+        <div id="groupsection" class="left">
+            <label><strong>Room name:</strong></label><br>
+            <input id="groupcode" type="text" value="{{ room }}" style="width:100px; margin-right: 6px;"><button id="grouproomsubmit" class="twitchstyle">Go</button>
+            <button id="grouppush" class="twitchstyle" style="display:inline-block; margin-top: 6px;">Push</button>
+            <button id="grouppull" class="twitchstyle" style="display:inline-block; margin-top: 6px;">Pull</button>
+        </div>
+    </div>
+    <div id="wrapper" style="position:fixed; display:block; top:8px; left:196px; right:8px; bottom:8px;">
+        <div id="player"></div>
+    </div>
+</body>
+</html>

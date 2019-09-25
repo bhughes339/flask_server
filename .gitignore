@@ -1,0 +1,7 @@
+.vscode
+__pycache__
+instance/*
+!instance/config.cfg.example
+venv
+billy_flask/static/slack_media
+billy_flask/static/twitter_media

@@ -1,0 +1,32 @@
+# Set SECRET_KEY to a random string. The official Flask documentation recommends this method:
+# python -c 'import os; print(os.urandom(16))'
+SECRET_KEY = b''
+
+MYSQL = {
+    'host': '',
+    'user': '',
+    'passwd': ''
+}
+
+SPOTIFY = {
+    'client_id': '',
+    'client_secret': ''
+}
+
+TWITTER = {
+    'consumer_key': '',
+    'consumer_secret': ''
+}
+
+YOUTUBE = {
+    'api_key': ''
+}
+
+SLACK = {
+    'app_token': '',
+    'app_secret': ''
+}
+
+TWITCH = {
+    'client_id': ''
+}
