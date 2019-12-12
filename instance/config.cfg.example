@@ -2,6 +2,8 @@
 # python -c 'import os; print(os.urandom(16))'
 SECRET_KEY = b''
 
+BP_EXCLUDE = []
+
 MYSQL = {
     'host': '',
     'user': '',

@@ -4,11 +4,11 @@ import os
 import requests
 from flask import Blueprint, current_app, render_template, request, url_for, jsonify
 
-from .db import get_db
-from .util import download
+from billy_flask.db import get_db
+from billy_flask.util import download
 
 bp = Blueprint('twitter', __name__,
-               url_prefix='/twitter', template_folder='templates/twitter')
+               url_prefix='/twitter', template_folder='templates', static_folder='static')
 cnx = None
 config = None
 
@@ -89,7 +89,7 @@ def fetch(search, username=None, deleted=None, media=None):
             if os.path.exists(directory):
                 files = sorted(glob.glob(directory + '/*'))
                 for f in files:
-                    local_file = url_for('static', filename='twitter_media/{0}/{1}'.format(t['id'], os.path.split(f)[1]))
+                    local_file = url_for('.static', filename='twitter_media/{0}/{1}'.format(t['id'], os.path.split(f)[1]))
                     if os.path.splitext(f)[1] == '.mp4':
                         html += '<video class="tweetmedia" src="{0}" type="video/mp4" autoplay controls></video><br>'.format(local_file)
                         html += '<a href="{0}">Link to video</a><br>'.format(local_file)
@@ -155,7 +155,7 @@ def save_media(tweet):
             # Find the video with the highest bitrate
             file = max(m['video_info']['variants'], key=lambda x: x.get('bitrate', 0))['url']
         if file:
-            folder = os.path.join(current_app.root_path, 'static/twitter_media', tweet['id_str'])
+            folder = os.path.join(bp.root_path, 'static/twitter_media', tweet['id_str'])
             download(file, folder, basename=m['id_str'])
 
 

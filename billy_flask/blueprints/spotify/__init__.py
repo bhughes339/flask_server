@@ -6,7 +6,7 @@ from flask import (Blueprint, current_app, redirect, render_template, request,
                    session, url_for)
 
 bp = Blueprint('spotify', __name__,
-               url_prefix='/spotify', template_folder='templates/spotify')
+               url_prefix='/spotify', template_folder='templates')
 config = None
 
 

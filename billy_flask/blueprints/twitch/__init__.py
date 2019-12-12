@@ -4,10 +4,10 @@ import requests
 from flask import (Blueprint, Response, current_app, jsonify, render_template,
                    request, url_for)
 
-from .db import get_db
+from billy_flask.db import get_db
 
 bp = Blueprint('twitch', __name__,
-               url_prefix='/twitch', template_folder='templates/twitch')
+               url_prefix='/twitch', template_folder='templates', static_folder='static')
 
 config = None
 cnx = None

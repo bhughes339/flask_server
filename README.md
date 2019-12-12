@@ -2,13 +2,13 @@
 
 This repository is provided as documentation and source control for my personal Flask server project. This project is not intended to be run by anybody but myself, and I cannot provide support for it.
 
-## Components
+## Components (Blueprints)
 
-### <span>spotify.py</span>
+### <span>spotify</span>
 
 Show a user's most played artists and tracks using the `v1/me/top` Spotify API.
 
-### <span>slack.py</span>
+### <span>slack</span>
 
 Functions for Slack workspaces that abuse the pin feature by pinning amusing messages.
 
@@ -16,13 +16,13 @@ Can be set up to provide real-time storage of new pinned messages in a Slack wor
 
 Slash commands:
 - `/pinhit` - Selects a random pinned message from the database and prints it to a Slack channel
-- `/potd` - "Pinhit of the day" selects a random pin from the current day in prior years and prints it to a Slack channel, similar to the "memories" feature of other social media sites
+- `/potd` - "Pinhit of the day" prints pins from the current day in prior years and prints it to a Slack channel, similar to the "memories" feature of other social media sites
 
-### <span>twitch.py</span>
+### <span>twitch</span>
 
 TwitchSurf: Twitch.tv stream randomizer. Displays a random Twitch stream every time the "Surf" button is pressed.
 
-### <span>youtube.py</span>
+### <span>youtube</span>
 
 Usage format: http://example.com/youtube/<channel_id>
 
@@ -62,9 +62,12 @@ Create media folders (symbolic links are fine with proper permissions)
 Create relative symbolic links from the `instance` folders to the `static` folder:
 
 ```shell
-cd billy_flask/static/
-ln -s ../../instance/twitter_media .
-ln -s ../../instance/slack_media .
+mkdir billy_flask/blueprints/slack/static
+cd billy_flask/blueprints/slack/static
+ln -s ../../../../instance/slack_media .
+mkdir billy_flask/blueprints/twitter/static
+cd billy_flask/blueprints/twitter/static
+ln -s ../../../../instance/twitter_media .
 ```
 
 Create databases using schemas in the `schemas` folder. Pymysql doesn't have a good way of doing this, so do it manually for now:
@@ -81,7 +84,7 @@ Install gunicorn within the virtual environment:
 
 ```shell
 . venv/bin/activate
-pip3 install -U gunicorn
+pip3 install gunicorn
 deactivate
 ```
 
@@ -104,7 +107,7 @@ Edit the service file using this template:
 ```properties
 [Unit]
 Description=Flask server on port 5000 using gunicorn3
-After=network.target
+After=network.target mysql.service
 
 [Service]
 WorkingDirectory=/full/path/to/flask_server

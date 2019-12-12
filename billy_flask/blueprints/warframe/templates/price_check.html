@@ -1,0 +1,239 @@
+<html>
+<head>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta name='viewport' content='width=516'>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-typeahead/2.10.6/jquery.typeahead.min.js"></script>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.css" integrity="sha256-CNwnGWPO03a1kOlAsGaH5g8P3dFaqFqqGFV/1nkX5OU=" crossorigin="anonymous" />
+    <script type=text/javascript>
+    $(document).ready(function() {
+        $('#submit').click(function() {
+            searchAll();
+        });
+        $('#clear').click(function() {
+            clearAll();
+        });
+        $('#addrow').click(function() {
+            addRow();
+        });
+        $('#templatesubmit').click(function() {
+            var items;
+            switch ($('#templates').val()) {
+                case 'cephalon':
+                    items = ['Looter', 'Detect Vulnerability', 'Reawaken', 'Negate', 'Ambush', 'Energy Generator'];
+                    break;
+                case 'perrin':
+                    items = ['Abating Link', 'Afterburn', 'Creeping Terrify', 'Despoil', 'Elemental Sandstorm', 'Everlasting Ward', 'Eternal War', 'Fracturing Crush', 'Greedy Pull', 'Guided Effigy', 'Hysterical Assault', 'Infiltrate', 'Ironclad Charge', 'Iron Shrapnel', 'Larva Burst', 'Magnetized Discharge', 'Negation Swarm', 'Perpetual Vortex', 'Piercing Navigator', 'Piercing Roar', 'Pool of Life', 'Prolonged Paralysis', 'Reinforcing Stomp', 'Repelling Bastille', 'Resonance', 'Resonating Quake', 'Savage Silence', 'Shield Transference', 'Shield of Shadows', 'Sonic Fracture', 'Soul Survivor', 'Swing Line', 'Tesla Link', 'Vampire Leech', 'Vexing Retaliation'];
+                    break;
+                default:
+                    break;
+            }
+            for (var i = $('.wrapper').length; i < items.length; i++) {
+                addRow();
+            }
+            searchList(items);
+        });
+        $('#setsubmit').click(function() {
+            setCheck();
+        });
+        $("#framecheck").on("keydown", function(e) {
+            if (e.which == 13) {
+                setCheck();
+            }
+        });
+        $('#bulksubmit').click(function() {
+            bulkCheck();
+        });
+        $(".wrapper").on("keydown", function(e) {
+            if (e.which == 13) {
+                doSearch($(this));
+            }
+        });
+        initTypeahead();
+        $.typeahead({
+            input: '.set',
+            order: "desc",
+            source: {
+                ajax: { url: "{{ url_for('.get_setlist') }}" }
+            },
+            callback: {
+                onClickAfter: function(node, a, item, event) {
+                    setCheck();
+                }
+            }
+        });
+    });
+    function initTypeahead() {
+        $.typeahead({
+            input: '.item',
+            order: "desc",
+            source: {
+                ajax: { url: "{{ url_for('.get_itemlist') }}" }
+            },
+            callback: {
+                onClickAfter: function(node, a, item, event) {
+                    doSearch($(node).closest('.wrapper'));
+                },
+                onCancel: function(node, event) {
+                    var wrapper = $(node).closest('.wrapper');
+                    $(wrapper).find('.price').html('');
+                },
+            }
+        });
+    }
+    function addRow() {
+        $.ajax({
+            async: false,
+            method: 'GET',
+            url: "{{ url_for('.get_row_html') }}",
+            success: function(result) {
+                $('#rows').append(result.row_html);
+                initTypeahead();
+            }
+        });
+    }
+    function doSearch(wrapper) {
+        var item = $(wrapper).find('.item').val();
+        if (item) {
+            $(wrapper).find('.price').html('');
+            $.ajax({
+                method: 'GET',
+                url: "{{ url_for('.get_avg_price') }}",
+                data: {
+                    'item': item.trim(),
+                    'days': $('#days').val()
+                },
+                success: function(result) {
+                    $(wrapper).find('.thumb').prop('src', '');
+                    var price = $(wrapper).find('.price')
+                    if (result.status === 'notfound') {
+                        $(price).html(`Item "${item}" not found`);
+                    } else if (result.status === 'nodata') {
+                        $(price).html(`No market data for item "${item}" | <a href="${result.link}" target="_blank">Market</a> | <a href="${result.wiki_link}" target="_blank">Wiki</a>`);
+                    } else {
+                        var html = `${result.price} plat (${result.volume} sold) | <a href="${result.link}" target="_blank">Market</a> | <a href="${result.wiki_link}" target="_blank">Wiki</a>`;
+                        if (result.days) {
+                            html += ` | ${result.days} days of data`;
+                        }
+                        if (result.ducats) {
+                            html += ` | ${result.ducats} ducats per plat`;
+                        }
+                        $(price).html(html);
+                        // $(wrapper).find('.thumb').prop('src', result.thumb);
+                    }
+                }
+            });
+        }
+    }
+    function searchAll() {
+        $('.wrapper').each(function() {
+            doSearch($(this));
+        });
+    }
+    function clearAll() {
+        $('.wrapper').each(function() {
+            $(this).find('.item').val('');
+            $(this).find('.price').html('');
+        });
+    }
+    function searchList(array) {
+        for (var i = $('.wrapper').length; i < array.length; i++) {
+            addRow();
+        }
+        clearAll();
+        var wraps = $('.wrapper');
+        for (i=0; i<array.length; i++) {
+            thisWrap = $(wraps)[i];
+            $(thisWrap).find('.item').val(array[i]);
+        }
+        searchAll();
+    }
+    function setCheck() {
+        var itemBase = $('#setcheck').val().trim();
+        if (itemBase) {
+            $.ajax({
+                method: 'GET',
+                url: "{{ url_for('.get_itemset') }}",
+                data: { 'base': itemBase },
+                success: function(result) {
+                    searchList(result);
+                }
+            });
+        }
+    }
+    function bulkCheck() {
+        var text = $('#bulk').val();
+        var items = text.split(/\r?\n/);
+        searchList(items);
+    }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-typeahead/2.10.6/jquery.typeahead.min.css" />
+    <style>
+        body {margin: 10px; background-color: rgb(182, 168, 214); font-family: Lato, Helvetica Neue, Arial, Helvetica, sans-serif;}
+        .wrapper {display: flex; width: 800px; padding-bottom: 10px; }
+        input {margin-bottom:5px;}
+        .tab-container { width: 300px; border-top: 2px solid black; }
+        .nav-pills { padding: 10px 0px; }
+        .typeahead__container {width:300px;}
+        .typeahead__container.short {width:200px;}
+        .price {flex-grow: 1; margin: auto; padding-left: 10px;}
+        .nohover {height: 2.5em; }
+        .thumb {height: 38px; padding-left: 5px;}
+    </style>
+</head>
+<body>
+    <div>
+        Days: <input type="number" id="days" style="width:50px;" value="7">
+    </div>
+    <div id="rows">
+        {{ row_html|safe }}
+    </div>
+    <div style="padding-bottom: 10px;">
+        <button class="nohover" id="submit"><span class="oi oi-magnifying-glass" title="Search" aria-hidden="true"></span></button>
+        <button class="nohover" id="clear"><span class="oi oi-x" title="Clear" aria-hidden="true"></button>
+        <button class="nohover" id="addrow"><span class="oi oi-plus" title="Add row" aria-hidden="true"></button>
+    </div>
+    <div class="tab-container">
+        <ul class="nav nav-pills">
+            <li class="nav-item">
+                <a class="nav-link active" data-toggle="pill" href="#menusets">Sets</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="pill" href="#menutemplates">Templates</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="pill" href="#menubulk">Bulk</a>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div id="menusets" class="tab-pane active">
+                <div style="display:flex;">
+                    <div class="typeahead__container short">
+                    <div class="typeahead__field">
+                    <span class="typeahead__query">
+                    <input id="setcheck" class="set" name="set[query]" type="search" placeholder="Crafted item name" autocomplete="off">
+                    </span></div></div>
+                    <span style="width: 5px;"></span>
+                    <button id="setsubmit" style="align-self: stretch;"><span class="oi oi-magnifying-glass" title="Search" aria-hidden="true"></span></button>
+                </div>
+            </div>
+            <div id="menutemplates" class="tab-pane">
+                <div style="display:flex;">
+                    <select id="templates" style="height: 2.0em;">
+                        <option value="cephalon">Cephalon Simaris mods</option>
+                        <option value="perrin">Perrin mods</option>
+                    </select>
+                    <span style="width: 5px;"></span>
+                    <button id="templatesubmit" style="align-self: stretch;"><span class="oi oi-magnifying-glass" title="Search" aria-hidden="true"></span></button>
+                </div>
+            </div>
+            <div id="menubulk" class="tab-pane">
+                <textarea id="bulk" style="width: 300px; height: 100px; " placeholder="List"></textarea>
+                <button id="bulksubmit" style="height: 2.0em;"><span class="oi oi-magnifying-glass" title="Search" aria-hidden="true"></span></button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

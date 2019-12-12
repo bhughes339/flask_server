@@ -5,10 +5,10 @@ from warnings import filterwarnings
 import requests
 from flask import Blueprint, current_app, jsonify, request
 
-from .db import get_db, mysql_warning
-from .util import download
+from billy_flask.db import get_db, mysql_warning
+from billy_flask.util import download
 
-bp = Blueprint('slack', __name__, url_prefix='/slack')
+bp = Blueprint('slack', __name__, url_prefix='/slack', static_folder='static')
 cnx = None
 config = None
 

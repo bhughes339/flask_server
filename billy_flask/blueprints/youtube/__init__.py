@@ -6,7 +6,8 @@ import requests
 from flask import Blueprint, current_app, render_template, url_for, request, jsonify
 
 
-bp = Blueprint('youtube', __name__, url_prefix='/youtube')
+bp = Blueprint('youtube', __name__,
+               url_prefix='/youtube', template_folder='templates', static_folder='static')
 
 api_key = None
 

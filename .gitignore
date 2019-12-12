@@ -3,5 +3,5 @@ __pycache__
 instance/*
 !instance/config.cfg.example
 venv
-billy_flask/static/slack_media
-billy_flask/static/twitter_media
+billy_flask/blueprints/slack/static/slack_media
+billy_flask/blueprints/twitter/static/twitter_media

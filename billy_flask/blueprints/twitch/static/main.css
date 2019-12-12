@@ -69,6 +69,11 @@ button.twitchstyle:active {
 	text-decoration: none;
 }
 
+iframe#chat {
+	position: fixed;
+	top: 0;
+	right: 0;
+}
 
 
 /* typeahead */
@@ -93,9 +98,6 @@ button.twitchstyle:active {
   background-color: #fff;
   border: 1px solid #ccc;
   border: 1px solid rgba(0, 0, 0, 0.2);
-  -webkit-border-radius: 8px;
-     -moz-border-radius: 8px;
-          border-radius: 8px;
   -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
      -moz-box-shadow: 0 5px 10px rgba(0,0,0,.2);
           box-shadow: 0 5px 10px rgba(0,0,0,.2);

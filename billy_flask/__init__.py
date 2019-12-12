@@ -8,19 +8,23 @@ import os
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
 
-    try:
-        os.makedirs(app.instance_path)
-    except OSError:
-        pass
+    os.makedirs(app.instance_path, exist_ok=True)
     
     app.config.from_pyfile('config.cfg')
-    
-    from billy_flask import spotify, twitter, youtube, twitch, slack
-    app.register_blueprint(spotify.bp)
-    app.register_blueprint(twitter.bp)
-    app.register_blueprint(youtube.bp)
-    app.register_blueprint(twitch.bp)
-    app.register_blueprint(slack.bp)
 
+    register_blueprints(app)
 
     return app
+
+def register_blueprints(app):
+    import setuptools, importlib
+    exclude = app.config['BP_EXCLUDE']
+    path = os.path.join(app.root_path, 'blueprints')
+    for p in setuptools.find_packages(path):
+        if p not in exclude:
+            try:
+                module = '{0}.blueprints.{1}'.format(__name__, p)
+                bp = importlib.import_module(module).bp
+                app.register_blueprint(bp)
+            except Exception as e:
+                print(e)

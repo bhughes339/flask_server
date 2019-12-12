@@ -2,8 +2,8 @@
 <html>
 <head>
     <title>TwitchSurf</title>
-    <link rel="shortcut icon" href="{{ url_for('static', filename='twitch/favicon.ico') }}">
-    <link rel="stylesheet" type="text/css" media="screen" href="{{ url_for('static', filename='twitch/main.css') }}" />
+    <link rel="shortcut icon" href="{{ url_for('.static', filename='favicon.ico') }}">
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ url_for('.static', filename='main.css') }}" />
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
     <script src="https://player.twitch.tv/js/embed/v1.js"></script>
@@ -48,6 +48,7 @@ function newStream(streamObject, buttonPressed) {
     }
     updateInterval = setInterval(updateStreamData, 10000);
     $(document).prop('title','TwitchSurf: ' + currentStream.channel.display_name);
+    $('iframe#chat').prop('src', `https://www.twitch.tv/embed/${currentStream.channel.name}/chat?darkpopout`);
 }
 
 function getRandom(game) {
@@ -292,6 +293,17 @@ $(document).ready(function() {
 		}
     });
 
+    $('#togglechat').click(function() {
+        if ($('iframe#chat').width() === 0) {
+            $('iframe#chat').get(0).style.width = "350px";
+            $('#wrapper').get(0).style.right = "358px";
+        } else {
+            $('iframe#chat').get(0).style.width = "0px";
+            $('#wrapper').get(0).style.right = "8px";
+        }
+        $('#wrapper').resize();
+    });
+
 });
     </script>
 </head>
@@ -322,6 +334,9 @@ $(document).ready(function() {
             <label><input type="checkbox" id="eng" style="margin-top: 6px;" checked="checked">English Only</label><br>
             <label><input type="checkbox" id="groupenable" {% if room %}checked="checked"{% endif %} style="margin-top: 6px;">Group Mode</label>
         </div>
+        <div class="left">
+            <button id="togglechat" class="twitchstyle">Toggle chat</button>
+        </div>
         <div id="groupsection" class="left">
             <label><strong>Room name:</strong></label><br>
             <input id="groupcode" type="text" value="{{ room }}" style="width:100px; margin-right: 6px;"><button id="grouproomsubmit" class="twitchstyle">Go</button>
@@ -332,5 +347,12 @@ $(document).ready(function() {
     <div id="wrapper" style="position:fixed; display:block; top:8px; left:196px; right:8px; bottom:8px;">
         <div id="player"></div>
     </div>
+    <iframe frameborder="0"
+            scrolling="yes"
+            id="chat"
+            src="https://www.twitch.tv/embed/MrKayons/chat?darkpopout"
+            height="100%"
+            width="0px">
+    </iframe>
 </body>
 </html>

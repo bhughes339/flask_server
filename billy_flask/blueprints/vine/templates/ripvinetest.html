@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>RIP VINE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="./css/vine.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        getRandom($('#vine'));
+        getRandom($('#vine2'));
+        document.getElementById('vine').addEventListener('ended', vineHandler, false);
+        document.getElementById('vine2').addEventListener('ended', vineHandler, false);
+        $('.vine').click(function(eventObject) {
+            var vid = $(this).get(0);
+            if (vid.paused) {
+                vid.play();
+            } else {
+                vid.pause();
+            }
+        });
+        $('#sharelink').click(function() {
+            var shareData = { url: $('#sharelink').prop('href') };
+            navigator.share(shareData);
+        });
+    });
+
+    function vineHandler(e) {
+        // getRandom();
+        // $('#vine').hide();
+        var $other = ($(this).attr('id') === 'vine') ? $('#vine2') : $('#vine')
+        $(this).css('z-index', 0);
+        $other.css('z-index', 1);
+        $other.get(0).play();
+        getRandom($(this));
+        // $('#vine').show();
+    }
+
+    function getRandom(elementId) {
+        if ($('#loop').prop("checked")) {
+            // document.getElementById('vine').play()
+        } else {
+            $.ajax({
+                url: "{{ url_for('.get_random_vine') }}",
+                success: function(r) {
+                    $(elementId).attr('src', r);
+                    $('#sharelink').prop('href', r);
+                }
+            });
+        }
+    }
+    </script>
+    <style>
+        body { background-color: #383838; font-family: Lato, Helvetica Neue, Arial, Helvetica, sans-serif; }
+        p { display: inline-block; }
+        .wrapper { max-height: 480px; max-width: 480px; }
+        .vine { width: 100%; position: absolute; }
+        #vine { z-index: 1; }
+        #vine2 { z-index: 0; }
+        #sharelink { color: white; padding: 10px; border: 1px solid white; border-radius: 5px; }
+        label { width: 120px; }
+        input[type="checkbox"] { display: none; }
+        input[type="checkbox"] + label { position:absolute; bottom: 0; left: 0; padding: 10px; filter: grayscale(100%); }
+        input[type="checkbox"]:checked + label { filter: grayscale(0); }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <video id="vine" class="vine" preload playsinline></video>
+        <video id="vine2" class="vine" preload playsinline></video>
+    </div>
+    <br>
+    <span id="sharelink">Share this video</span>
+    <input type="checkbox" id="loop"><label for="loop"><img src="{{ url_for('.static', filename='loop.png') }}" style="width:100%"></label>
+</body>
+</html>
