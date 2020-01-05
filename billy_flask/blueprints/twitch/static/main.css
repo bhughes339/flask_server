@@ -75,6 +75,15 @@ iframe#chat {
 	right: 0;
 }
 
+#wrapper {
+  position:fixed;
+  display:block;
+  top:8px;
+  left:196px;
+  right:8px;
+  bottom:8px;
+  z-index: -1;
+}
 
 /* typeahead */
 
@@ -94,6 +103,7 @@ iframe#chat {
 
 .tt-menu {
   color: #000;
+  max-width: 500px;
   padding: 5px;
   background-color: #fff;
   border: 1px solid #ccc;
@@ -101,6 +111,12 @@ iframe#chat {
   -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
      -moz-box-shadow: 0 5px 10px rgba(0,0,0,.2);
           box-shadow: 0 5px 10px rgba(0,0,0,.2);
+}
+
+.tt-suggestion {
+  overflow: hidden;
+  white-space: nowrap;
+  z-index: 1;
 }
 
 .tt-suggestion:hover {

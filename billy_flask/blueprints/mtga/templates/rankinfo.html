@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>MTGA Rank</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4"
+        crossorigin="anonymous">
+    <style>
+        body {
+            margin: 10px;
+        }
+        h3 {
+            font-size: 1.4em;
+        }
+    </style>
+    <script>
+    function copyTextToClipboard(text) {
+        var textArea = document.createElement("textarea");
+        textArea.style.position = 'fixed';
+        textArea.style.top = 0;
+        textArea.style.right = 0;
+        textArea.style.width = '2em';
+        textArea.style.height = '2em';
+        textArea.style.padding = 0;
+        textArea.style.border = 'none';
+        textArea.style.outline = 'none';
+        textArea.style.boxShadow = 'none';
+        textArea.style.background = 'transparent';
+        textArea.value = '%USERPROFILE%\\AppData\\LocalLow\\Wizards Of The Coast\\MTGA\\output_log.txt';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            var successful = document.execCommand('copy');
+        } catch (err) {
+            console.log('Oops, unable to copy');
+        }
+        document.body.removeChild(textArea);
+    }
+    </script>
+</head>
+<body>
+    <div style="width:1000px;">
+        <h1>MTG Arena Rank Stats</h1>
+        <p style="font-weight: bold; color: rgb(129, 0, 0);">NOTE: Logs need to be enabled in MTGA (Settings > Account > Detailed Logs (Plugin Support))</p>
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Click the path below to copy it to your clipboard:</li>
+            <ul>
+                <li>Windows: <a href="#" onclick="copyTextToClipboard(this.innerText)">%USERPROFILE%\AppData\LocalLow\Wizards Of The Coast\MTGA\output_log.txt</a></li>
+            </ul>
+            <li>Click "Browse"</li>
+            <li>Paste the path into the file selection window and submit</li>
+        </ol>
+        <form enctype="multipart/form-data" action="" method="POST">
+            <div class="submit">
+                <input type="file" accept=".txt" name="mtga_log" id="mtga_log" style="display: none;" onchange="this.form.submit();"/>
+                <input type="button" class="btn btn-primary" value="Browse" onclick="document.getElementById('mtga_log').click();" />
+            </div>
+        </form>
+        <br/>
+        {% if result %}
+        <div style="width: 600px;">
+            <table class="table">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">Format</th>
+                        <th scope="col">Wins</th>
+                        <th scope="col">Losses</th>
+                        <th scope="col">Rank</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row">Constructed</th>
+                        <td>{{ result.constructedMatchesWon }}</td>
+                        <td>{{ result.constructedMatchesLost }}</td>
+                        <td>{{ result.constructedClass }} {{ result.constructedLevel }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Limited</th>
+                        <td>{{ result.limitedMatchesWon }}</td>
+                        <td>{{ result.limitedMatchesLost }}</td>
+                        <td>{{ result.limitedClass }} {{ result.limitedLevel }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -35,7 +35,6 @@
         });
         $.typeahead({
             input: '.user-list',
-            order: "desc",
             source: {
                 ajax: {
                     url: "{{ url_for('.get_twitter_userlist') }}"

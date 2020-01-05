@@ -18,7 +18,7 @@ def create_app():
 
 def register_blueprints(app):
     import setuptools, importlib
-    exclude = app.config['BP_EXCLUDE']
+    exclude = app.config.get('BP_EXCLUDE', [])
     path = os.path.join(app.root_path, 'blueprints')
     for p in setuptools.find_packages(path):
         if p not in exclude:

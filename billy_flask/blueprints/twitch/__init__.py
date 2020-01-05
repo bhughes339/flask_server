@@ -39,7 +39,6 @@ def get_stream():
     return jsonify(r.json())
 
 
-
 @bp.route('/_get_random_stream', methods=['GET'])
 def get_random_stream():
     query = {'limit': 1, 'offset': 0}
@@ -67,6 +66,19 @@ def get_random_stream():
             return jsonify('error')
         response = r.json()
     return jsonify(response['streams'][0] if response['streams'] else [])
+
+
+@bp.route('/_search_streams', methods=['GET'])
+def search_streams():
+    url = 'https://api.twitch.tv/kraken/search/streams'
+    query = {
+        'limit': 10,
+        'query': request.args.get('query', None)
+    }
+    response = requests.get(url, params=query, headers=headers).json()
+    stream_list = response.get('streams', None) or []
+    # return jsonify([x['channel']['name'] for x in stream_list])
+    return jsonify(stream_list)
 
 
 @bp.route('/_get_top_games', methods=['GET'])

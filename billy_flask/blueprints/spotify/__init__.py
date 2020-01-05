@@ -16,6 +16,7 @@ def setup():
     config = current_app.config['SPOTIFY']
 
 
+@bp.route('/')
 @bp.route('/top_artists')
 def get_top_artists():
     if 'spotify_access_token' in session:
@@ -101,7 +102,8 @@ def list_to_html(divname, response, active=False):
         artists = (', '.join([x['name'] for x in i['artists']]) + ' - '
                    if 'artists' in i
                    else '')
-        url = i['external_urls']['spotify']
+        # url = i['external_urls']['spotify']
+        url = i['uri']
         output += '<li><a href="{0}">{1}{2}</a></li>'.format(url, artists, i['name'])
     output += '</ol></div>'
     return output

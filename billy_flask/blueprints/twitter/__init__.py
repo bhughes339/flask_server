@@ -35,10 +35,11 @@ def get_twitter_fav():
 
 @bp.route('/_get_userlist')
 def get_twitter_userlist():
-    query = 'SELECT username FROM users'
+    query = 'SELECT username FROM leaderboard'
     with cnx.cursor() as cursor:
         cursor.execute(query)
         users = cursor.fetchall()
+    print([x[0] for x in users])
     return jsonify([x[0] for x in users])
 
 
@@ -91,7 +92,7 @@ def fetch(search, username=None, deleted=None, media=None):
                 for f in files:
                     local_file = url_for('.static', filename='twitter_media/{0}/{1}'.format(t['id'], os.path.split(f)[1]))
                     if os.path.splitext(f)[1] == '.mp4':
-                        html += '<video class="tweetmedia" src="{0}" type="video/mp4" autoplay controls></video><br>'.format(local_file)
+                        html += '<video class="tweetmedia" src="{0}#t=0.1" type="video/mp4" controls></video><br>'.format(local_file)
                         html += '<a href="{0}">Link to video</a><br>'.format(local_file)
                     else:
                         html += '<img class="tweetmedia" src="{0}"><br>'.format(local_file)

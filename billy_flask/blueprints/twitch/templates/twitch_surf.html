@@ -231,7 +231,49 @@ $(document).ready(function() {
         }
     });
 
-    bloodHound = new Bloodhound({
+    streamBloodhound = new Bloodhound({
+        datumTokenizer: Bloodhound.tokenizers.whitespace,
+        queryTokenizer: Bloodhound.tokenizers.whitespace,
+        sufficient: 1,
+        remote: {
+            url: "{{ url_for('.search_streams') }}" + '?query=%QUERY',
+            wildcard: '%QUERY'
+            // transform: (response) => {
+            //     return response.map(value => value.channel.name);
+            // }
+        }
+    });
+
+    $('#streamtypeahead').typeahead({
+        hint: false,
+        highlight: true,
+        minLength: 2
+        },
+        {
+        name: 'streamlist',
+        source: streamBloodhound,
+        display: (suggestion) => {
+            return `${suggestion.channel.display_name} (${suggestion.game})`;
+        }
+    });
+
+    $('#streamtypeahead').bind('typeahead:select', function(event, selection) {
+        console.log(event);
+        console.log(selection);
+        $('#streamtypeahead').typeahead('val', '');
+        $.ajax({
+            url: fetchUrl,
+            data: {
+                channel: selection.channel._id
+            },
+            success: function(result) {
+                console.log(result);
+                newStream(result.stream);
+            }
+        });
+    });
+
+    gameBloodhound = new Bloodhound({
         datumTokenizer: Bloodhound.tokenizers.whitespace,
         queryTokenizer: Bloodhound.tokenizers.whitespace,
         sufficient: 1,
@@ -249,7 +291,7 @@ $(document).ready(function() {
         },
         {
         name: 'gameslist',
-        source: bloodHound
+        source: gameBloodhound
     });
 
     $('#gametypeahead').bind('typeahead:select', function(event, selection) {
@@ -318,6 +360,9 @@ $(document).ready(function() {
             <label id="streamlabel" title="Click to copy stream URL to clipboard"><strong>Stream:</strong></label><div id="name" style="margin-top: 6px;">n/a</div>
         </div>
         <div class="left">
+            <input id="streamtypeahead" class="typeahead" type="text" placeholder="Find a stream">
+        </div>
+        <div class="left">
             <label><strong>Viewers:</strong></label><div id="viewers" style="display:inline-block; margin-left:8px;">n/a</div>
         </div>
         <div class="left">
@@ -327,7 +372,7 @@ $(document).ready(function() {
             <a href="https://twitch.tv" id="game" class="left" style="margin-top: 6px;">n/a</a>
         </div>
         <div class="left">
-            <input id="gametypeahead" class="typeahead" type="text" placeholder="Filter by game...">
+            <input id="gametypeahead" class="typeahead" type="text" placeholder="Filter by game">
         </div>
         <div class="left">
             <label><strong>Options:</strong></label><br>
@@ -344,7 +389,7 @@ $(document).ready(function() {
             <button id="grouppull" class="twitchstyle" style="display:inline-block; margin-top: 6px;">Pull</button>
         </div>
     </div>
-    <div id="wrapper" style="position:fixed; display:block; top:8px; left:196px; right:8px; bottom:8px;">
+    <div id="wrapper">
         <div id="player"></div>
     </div>
     <iframe frameborder="0"
