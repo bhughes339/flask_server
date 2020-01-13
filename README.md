@@ -4,11 +4,11 @@ This repository is provided as documentation and source control for my personal 
 
 ## Components (Blueprints)
 
-### <span>spotify</span>
+### spotify
 
 Show a user's most played artists and tracks using the `v1/me/top` Spotify API.
 
-### <span>slack</span>
+### slack
 
 Functions for Slack workspaces that abuse the pin feature by pinning amusing messages.
 
@@ -18,11 +18,11 @@ Slash commands:
 - `/pinhit` - Selects a random pinned message from the database and prints it to a Slack channel
 - `/potd` - "Pinhit of the day" prints pins from the current day in prior years and prints it to a Slack channel, similar to the "memories" feature of other social media sites
 
-### <span>twitch</span>
+### twitch
 
 TwitchSurf: Twitch.tv stream randomizer. Displays a random Twitch stream every time the "Surf" button is pressed.
 
-### <span>youtube</span>
+### youtube
 
 Usage format: http://example.com/youtube/<channel_id>
 

@@ -8,6 +8,15 @@ bp = Blueprint('mtga', __name__,
                template_folder='templates',
                static_folder='static')
 
+RANK_COLORS = {
+    'Bronze': ('#cd7f32', 'black'),
+    'Silver': ('#c0c0c0', 'black'),
+    'Gold': ('#ffd700', 'black'),
+    'Platinum': ('#e5e4e2', 'black'),
+    'Diamond': ('#70d1f4', 'black'),
+    'Mythic': ('#e67316', 'black')
+}
+
 @bp.route('/', methods=['GET', 'POST'])
 def rank_info():
     result = None
@@ -29,5 +38,13 @@ def get_rank_from_log(logfile):
         match = re.search(r'"payload":(\{[^}]+})', last_match)
         if match:
             result = json.loads(match.group(1))
+            result['constructedWinPercent'] = result['limitedWinPercent'] = 0
+            if (result['constructedMatchesWon'] + result['constructedMatchesLost']) > 0:
+                result['constructedWinPercent'] = int(result['constructedMatchesWon'] / (result['constructedMatchesWon'] + result['constructedMatchesLost']) * 100)
+            if (result['limitedMatchesWon'] + result['limitedMatchesLost']) > 0:
+                result['limitedWinPercent'] = int(result['limitedMatchesWon'] / (result['limitedMatchesWon'] + result['limitedMatchesLost']) * 100)
+            
+            result['constructedColors'] = RANK_COLORS.get(result['constructedClass'], ('', 'black'))
+            result['limitedColors'] = RANK_COLORS.get(result['limitedClass'], ('', 'black'))
 
     return result

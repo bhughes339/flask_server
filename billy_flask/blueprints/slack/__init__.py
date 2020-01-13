@@ -98,7 +98,7 @@ def process_event():
                         for i in msg['files']:
                             import os
                             file = i['url_private']
-                            folder = os.path.join(current_app.root_path, 'static/slack_media', msg['ts'])
+                            folder = os.path.join(bp.root_path, 'static/slack_media', msg['ts'])
                             download(file, folder, headers={'Authorization': 'Bearer ' + config['app_token']})
             cnx.commit()
     return jsonify('ok')

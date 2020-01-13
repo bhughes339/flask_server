@@ -12,6 +12,8 @@
         h3 {
             font-size: 1.4em;
         }
+        .wins { color: rgb(0, 150, 0) }
+        .losses { color: rgba(150, 0, 0) }
     </style>
     <script>
     function copyTextToClipboard(text) {
@@ -67,21 +69,24 @@
                         <th scope="col">Format</th>
                         <th scope="col">Wins</th>
                         <th scope="col">Losses</th>
+                        <th scope="col">Win%</th>
                         <th scope="col">Rank</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <th scope="row">Constructed</th>
-                        <td>{{ result.constructedMatchesWon }}</td>
-                        <td>{{ result.constructedMatchesLost }}</td>
-                        <td>{{ result.constructedClass }} {{ result.constructedLevel }}</td>
+                        <td class="wins">{{ result.constructedMatchesWon }}</td>
+                        <td class="losses">{{ result.constructedMatchesLost }}</td>
+                        <td>{{ result.constructedWinPercent }}%</td>
+                        <td style="background-color: {{ result.constructedColors[0] }};">{{ result.constructedClass }} {{ result.constructedLevel }}</td>
                     </tr>
                     <tr>
                         <th scope="row">Limited</th>
-                        <td>{{ result.limitedMatchesWon }}</td>
-                        <td>{{ result.limitedMatchesLost }}</td>
-                        <td>{{ result.limitedClass }} {{ result.limitedLevel }}</td>
+                        <td class="wins">{{ result.limitedMatchesWon }}</td>
+                        <td class="losses">{{ result.limitedMatchesLost }}</td>
+                        <td>{{ result.limitedWinPercent }}%</td>
+                        <td style="background-color: {{ result.limitedColors[0] }};">{{ result.limitedClass }} {{ result.limitedLevel }}</td>
                     </tr>
                 </tbody>
             </table>
