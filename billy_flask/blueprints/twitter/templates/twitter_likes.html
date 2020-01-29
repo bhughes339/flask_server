@@ -25,7 +25,7 @@
     </script>
     <script type=text/javascript>
     $(document).ready(function() {
-        $('#random').click(function() {
+        $('.getrandom').click(function() {
             doSearch();
         });
         $(".typeahead__container").on("keydown", function(e) {
@@ -94,11 +94,20 @@
         .column {float: left;}
         .newcolumn {float: left; margin-left: 20px;}
         input {margin-bottom:5px;}
-        .tweettext {border-bottom: 2px solid black; padding-bottom: 5px;}
+        .tweettext {
+            border-bottom: 2px solid black;
+            padding: 20px;
+            font: normal normal 16px/1.4 Helvetica,Roboto,"Segoe UI",Calibri,sans-serif;
+            color: #1c2022;
+            background-color: white;
+        }
         .typeahead__field, .typeahead__list{width:300px;}
-        #tweet {width: 500px;}
+        #tweet {
+            width: 498px;
+            
+        }
         .tweetmedia {max-width:500px;}
-        #random {width:100px; height:100px; font-size: 2em; position: absolute; right: 0; top: 0;}
+        .getrandom {width:100px; height:100px; font-size: 2em; position: fixed;}
     </style>
 </head>
 <body>
@@ -116,11 +125,14 @@
                     <input class="search" name="search[query]" type="search" placeholder="Text to search" autocomplete="off">
                 </span>
             </div><br>
-        <input type="checkbox" id="deleted" value="deleted" />Deleted
-        <input type="checkbox" id="media" value="media" />Tweets with media
+            <input type="checkbox" id="deleted" value="deleted" />Deleted
+            <input type="checkbox" id="media" value="media" />Tweets with media
         </div>
-        <button class="nohover" id="random">♻️</button>
         <div id="tweet"></div>
     </div>
+    <div style="height: 100px;"></div>
+    <button class="nohover getrandom" style="left: 400; top: 8;">♻️</button>
+    <button class="nohover getrandom" style="left: 400; bottom: 8;">♻️</button>
+    <button class="nohover getrandom" style="left: 8; bottom: 8;">♻️</button>
 </body>
 </html>

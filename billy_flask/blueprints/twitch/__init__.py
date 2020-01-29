@@ -32,11 +32,8 @@ def get_stream():
     channel_id = request.args.get('channel', None)
     if not channel_id:
         return jsonify('error')
-    url = 'https://api.twitch.tv/kraken/streams/' + channel_id
-    r = requests.get(url, headers=headers)
-    if r.status_code != requests.codes['ok']:
-        return jsonify('error')
-    return jsonify(r.json())
+    payload = get_helix_stream(channel_id)
+    return jsonify(payload)
 
 
 @bp.route('/_get_random_stream', methods=['GET'])
@@ -65,7 +62,13 @@ def get_random_stream():
         if r.status_code != requests.codes['ok']:
             return jsonify('error')
         response = r.json()
-    return jsonify(response['streams'][0] if response['streams'] else [])
+    # Get Helix stream object
+    payload = None
+    try:
+        payload = get_helix_stream(response['streams'][0]['channel']['_id'])
+    except:
+        pass
+    return jsonify(payload if payload else {})
 
 
 @bp.route('/_search_streams', methods=['GET'])
@@ -102,6 +105,23 @@ def search_games():
     return jsonify([x['name'] for x in gamelist])
 
 
+@bp.route('/_get_game_name')
+def get_game_name():
+    game_id = request.args.get('game_id', '')
+    if not game_id:
+        return jsonify('error')
+    query = { 'id': game_id }
+    url = 'https://api.twitch.tv/helix/games'
+    r = requests.get(url, headers=headers, params=query)
+    try:
+        game_name = r.json()['data'][0]['name']
+    except:
+        game_name = ''
+    return Response(game_name,
+                    mimetype='text/plain'
+    )
+
+
 @bp.route('/_group_update')
 def group_update():
     import re
@@ -127,6 +147,53 @@ def group_event_stream():
             result = cursor.fetchone()
             stream = result[0] if result else 0
         return Response(
-            'data: {0}\n\n'.format(stream),
+            f'data: {stream}\n\n',
             mimetype='text/event-stream'
         )
+
+
+@bp.route('/_channel_event_stream')
+def channel_event_stream():
+    import json
+    channel_id = request.args.get('channel_id', '')
+    if channel_id:
+        payload = get_helix_stream(channel_id)
+        return Response(
+            f'data: {json.dumps(payload)}\n\n',
+            mimetype='text/event-stream'
+        )
+
+
+def get_helix_stream(channel_id):
+    if not channel_id:
+        return None
+    query = { 'user_id': channel_id }
+    url = 'https://api.twitch.tv/helix/streams'
+    r = requests.get(url, headers=headers, params=query)
+    if r.status_code != requests.codes['ok']:
+        return None
+    try:
+        payload = r.json()['data'][0]
+    except:
+        return None
+    query = { 'id': payload['game_id'] }
+    url = 'https://api.twitch.tv/helix/games'
+    r = requests.get(url, headers=headers, params=query)
+    if r.status_code != requests.codes['ok']:
+        return None
+    payload['game_name'] = r.json()['data'][0]['name']
+    return payload
+
+
+@bp.route('/_webhook_test', methods=['GET', 'POST'])
+def webhook_test():
+    print('hello???')
+    if request.method == 'GET':
+        return Response(request.args.get('hub.challenge', ''),
+                        mimetype='text/plain')
+    else:
+        if request.is_json:
+            print(request.get_json())
+        else:
+            print('no')
+    return jsonify('ok')

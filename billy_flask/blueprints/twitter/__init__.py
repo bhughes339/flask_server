@@ -3,6 +3,7 @@ import os
 
 import requests
 from flask import Blueprint, current_app, render_template, request, url_for, jsonify
+from requests_oauthlib import OAuth1
 
 from billy_flask.db import get_db
 from billy_flask.util import download
@@ -11,13 +12,16 @@ bp = Blueprint('twitter', __name__,
                url_prefix='/twitter', template_folder='templates', static_folder='static')
 cnx = None
 config = None
+auth = None
 
 
 @bp.before_request
 def setup():
-    global cnx, config
+    global cnx, config, auth
     config = current_app.config['TWITTER']
     cnx = get_db('twitter')
+    auth = OAuth1(config['consumer_key'], config['consumer_secret'],
+                  config['access_key'], config['access_secret'])
 
 
 @bp.route('/favs')
@@ -39,7 +43,6 @@ def get_twitter_userlist():
     with cnx.cursor() as cursor:
         cursor.execute(query)
         users = cursor.fetchall()
-    print([x[0] for x in users])
     return jsonify([x[0] for x in users])
 
 
@@ -57,6 +60,20 @@ def incoming_webhook():
                 for i in data['favorite_events']:
                     if data['for_user_id'] != i['favorited_status']['user']['id_str']:
                         save_tweet(i['favorited_status'])
+            if 'follow_events' in data:
+                for i in data['follow_events']:
+                    if i['type'].lower() == 'follow':
+                        follower_id = i['source']['id']
+                        if follower_id != data['for_user_id']:
+                            follower_name = i['source']['screen_name']
+                            params = { 'user_id': follower_id, 'skip_status': 1 }
+                            requests.post('https://api.twitter.com/1.1/blocks/create.json', params=params, auth=auth)
+                            requests.post('https://api.twitter.com/1.1/blocks/destroy.json', params=params, auth=auth)
+                            query = 'INSERT INTO follow_attempts (timestamp, user_id, screen_name) VALUES (%s, %s, %s)'
+                            with cnx.cursor() as cursor:
+                                cursor.execute(query, (i['created_timestamp'], follower_id, follower_name))
+                            cnx.commit()
+
         return jsonify(response='ok')
 
 
@@ -161,9 +178,6 @@ def save_media(tweet):
 
 
 def get_tweet(tweet_id):
-    from requests_oauthlib import OAuth1
-    auth = OAuth1(config['consumer_key'], config['consumer_secret'],
-                  config['access_key'], config['access_secret'])
     r = requests.get('https://api.twitter.com/1.1/statuses/show.json',
                      auth=auth, params={'id': tweet_id, 'tweet_mode': 'extended'})
     if r.status_code == requests.codes['ok']:

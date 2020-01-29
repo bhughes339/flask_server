@@ -16,7 +16,7 @@ var forwardStack = [];
 var badGames = [];
 var pushedStream = null;
 var groupRoom = null;
-var bgColor, currentStream, player, updateInterval, groupListen, bloodHound;
+var bgColor, currentStream, player, updateInterval, groupListen, channelListen, bloodHound;
 
 function newStream(streamObject, buttonPressed) {
     if (!buttonPressed) {
@@ -32,23 +32,24 @@ function newStream(streamObject, buttonPressed) {
         clearInterval(updateInterval);
     }
     currentStream = streamObject;
-    var game = (currentStream.game) ? currentStream.game : '';
-    $('#name').text(currentStream.channel.display_name);
-    updateElements(game, currentStream.viewers);
+    channelEventHandler(currentStream.user_id);
+    var game = (currentStream.game_name) ? currentStream.game_name : '';
+    $('#name').text(currentStream.user_name);
+    updateElements(game, currentStream.viewer_count);
     if (! player) {
         var options = {
             width: $('#wrapper').width(),
             height: $('#wrapper').height(),
-            channel: currentStream.channel.name
+            channel: currentStream.user_name
         };
         player = new Twitch.Player("player", options);
         player.setQuality("chunked");
     } else {
-        player.setChannel(currentStream.channel.name);
+        player.setChannel(currentStream.user_name);
     }
-    updateInterval = setInterval(updateStreamData, 10000);
-    $(document).prop('title','TwitchSurf: ' + currentStream.channel.display_name);
-    $('iframe#chat').prop('src', `https://www.twitch.tv/embed/${currentStream.channel.name}/chat?darkpopout`);
+    // updateInterval = setInterval(updateStreamData, 10000);
+    $(document).prop('title','TwitchSurf: ' + currentStream.user_name);
+    $('iframe#chat').prop('src', `https://www.twitch.tv/embed/${currentStream.user_name}/chat?darkpopout`);
 }
 
 function getRandom(game) {
@@ -60,14 +61,14 @@ function getRandom(game) {
         data: {
             game: (game) ? game : null,
             lang: ($('#eng').prop("checked")) ? "en" : null,
-            previd: (currentStream) ? currentStream.channel._id : null
+            previd: (currentStream) ? currentStream.user_id : null
         },
         success: function(result) {
-            if (badGames.indexOf(result.game) >= 0) {
+            if (badGames.indexOf(result.game_name) >= 0) {
                 getRandom();
             } else if (! currentStream) {
                 newStream(result);
-            } else if (result.channel._id != currentStream.channel._id) {
+            } else if (result.user_id != currentStream.user_id) {
                 newStream(result);
             }
         },
@@ -122,22 +123,6 @@ function copyTextToClipboard(text) {
     document.body.removeChild(textArea);
 }
 
-function updateStreamData() {
-    if (currentStream) {
-        $.ajax({
-            url: fetchUrl,
-            data: {
-                channel: currentStream.channel._id
-            },
-            success: function(result) {
-                if (currentStream.channel._id === result.stream.channel._id) {
-                    currentStream = result.stream;
-                    updateElements(currentStream.game, currentStream.viewers);
-                }
-            }
-        });
-    }
-}
 
 function pullGroupStream(streamId) {
     $.ajax({
@@ -146,8 +131,8 @@ function pullGroupStream(streamId) {
             channel: streamId
         },
         success: function(result) {
-            if (result.stream) {
-                newStream(result.stream);
+            if (result) {
+                newStream(result);
             }
         }
     });
@@ -172,7 +157,7 @@ function startEventHandler() {
 		if ($('#groupenable').prop("checked")) {
 			var needPush = (pushedId !== pushedStream);
 			pushedStream = pushedId;
-			var currentId = (currentStream) ? currentStream.channel._id : null;
+			var currentId = (currentStream) ? currentStream.user_id : null;
 			if (needPush && (currentId !== pushedStream)) {
 				pullGroupStream(pushedStream);
 				$('#random').prop('disabled', true);
@@ -194,6 +179,23 @@ function startEventHandler() {
 	};
 }
 
+
+function channelEventHandler(channel_id) {
+    var listenUrl = "{{ url_for('.channel_event_stream') }}?channel_id=" + channel_id;
+    if (channelListen) {
+        channelListen.close();
+    }
+    channelListen = new EventSource(listenUrl);
+    channelListen.onmessage = function(event) {
+        var streamObject = JSON.parse(event.data);
+        if (streamObject) {
+            currentStream = streamObject;
+            updateElements(streamObject.game_name, streamObject.viewer_count);
+        }
+    };
+}
+
+
 $(document).ready(function() {
     bgColor = $('body').css('backgroundColor');
     if (! $('#groupenable').prop('checked')) {
@@ -211,17 +213,17 @@ $(document).ready(function() {
         forwardButton();
     });
     $('#streamlabel').click(function() {
-        copyTextToClipboard(currentStream.channel.url);
+        copyTextToClipboard(`https://www.twitch.tv/${currentStream.user_name}`);
     });
     $('#blacklist').click(function() {
-        if (currentStream.game) {
-            badGames.push(currentStream.game);
+        if (currentStream.game_name) {
+            badGames.push(currentStream.game_name);
         }
         getRandom();
     });
     $('#whitelist').click(function() {
-        if (currentStream.game) {
-            getRandom(currentStream.game);
+        if (currentStream.game_name) {
+            getRandom(currentStream.game_name);
         }
     });
     $(window).resize(function() {
@@ -268,7 +270,7 @@ $(document).ready(function() {
             },
             success: function(result) {
                 console.log(result);
-                newStream(result.stream);
+                newStream(result);
             }
         });
     });
@@ -318,18 +320,18 @@ $(document).ready(function() {
 				url: "{{ url_for('.group_update') }}",
 				data: {
                     room: groupRoom,
-					stream: currentStream.channel._id
+					stream: currentStream.user_id
 				},
 				success: function(result) {
 					console.log("Pushed stream successfully.");
-					pushedStream = parseInt(currentStream.channel._id);
+					pushedStream = parseInt(currentStream.user_id);
 				}
 			});
 		}
     });
 
     $('#grouppull').click(function() {
-        var currentId = (currentStream) ? currentStream.channel._id : null;
+        var currentId = (currentStream) ? currentStream.user_id : null;
         if (pushedStream && currentId !== pushedStream) {
 			pullGroupStream(pushedStream);
 		}

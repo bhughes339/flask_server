@@ -28,9 +28,11 @@ Usage format: http://example.com/youtube/<channel_id>
 
 ## Setup
 
+NOTE: These instructions were tested using `bash` in a Debian-based Linux distribution.
+
 Create new venv in the project root and activate:
 
-```shell
+```bash
 cd /path/to/flask_server
 python3 -m venv venv
 . venv/bin/activate
@@ -38,7 +40,7 @@ python3 -m venv venv
 
 Install project and its dependencies:
 
-```shell
+```bash
 pip3 install -e .
 ```
 
@@ -54,25 +56,15 @@ flask_server/
 
 Copy `instance/config.cfg.example` to `instance/config.cfg` and set config options
 
-Create media folders (symbolic links are fine with proper permissions)
+Create media folders (symbolic links are fine with proper permissions):
 
-  * `instance/slack_media`
-  * `instance/twitter_media`
-
-Create relative symbolic links from the `instance` folders to the `static` folder:
-
-```shell
-mkdir billy_flask/blueprints/slack/static
-cd billy_flask/blueprints/slack/static
-ln -s ../../../../instance/slack_media .
-mkdir billy_flask/blueprints/twitter/static
-cd billy_flask/blueprints/twitter/static
-ln -s ../../../../instance/twitter_media .
-```
+  * `instance/slack_media` (read/write)
+  * `instance/twitter_media` (read/write)
+  * `instance/vines` (read)
 
 Create databases using schemas in the `schemas` folder. Pymysql doesn't have a good way of doing this, so do it manually for now:
 
-```shell
+```bash
 cat billy_flask/schema/*.sql | mysql -u username -p
 ```
 
@@ -82,7 +74,7 @@ cat billy_flask/schema/*.sql | mysql -u username -p
 
 Install gunicorn within the virtual environment:
 
-```shell
+```bash
 . venv/bin/activate
 pip3 install gunicorn
 deactivate
@@ -90,7 +82,7 @@ deactivate
 
 Deploy: 
 
-```shell
+```bash
 ./venv/bin/gunicorn -b127.0.0.1:5000 'billy_flask:create_app()'
 ```
 
@@ -98,7 +90,7 @@ Deploy:
 
 As root:
 
-```shell
+```bash
 touch /etc/systemd/system/flask_server.service
 ```
 
@@ -123,7 +115,7 @@ WantedBy=multi-user.target
 
 Reload systemd after editing service (as root):
 
-```shell
+```bash
 systemctl daemon-reload
 ```
 
