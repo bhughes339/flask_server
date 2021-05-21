@@ -2,11 +2,11 @@ import glob
 import os
 
 import requests
-from flask import Blueprint, current_app, render_template, request, url_for, jsonify
-from requests_oauthlib import OAuth1
-
 from billy_flask.db import get_db
 from billy_flask.util import download
+from flask import (Blueprint, current_app, jsonify, render_template, request,
+                   url_for)
+from requests_oauthlib import OAuth1
 
 bp = Blueprint('twitter', __name__,
                url_prefix='/twitter', template_folder='templates', static_folder='static')
@@ -65,14 +65,16 @@ def incoming_webhook():
                     if i['type'].lower() == 'follow':
                         follower_id = i['source']['id']
                         if follower_id != data['for_user_id']:
-                            follower_name = i['source']['screen_name']
-                            params = { 'user_id': follower_id, 'skip_status': 1 }
-                            requests.post('https://api.twitter.com/1.1/blocks/create.json', params=params, auth=auth)
-                            requests.post('https://api.twitter.com/1.1/blocks/destroy.json', params=params, auth=auth)
-                            query = 'INSERT INTO follow_attempts (timestamp, user_id, screen_name) VALUES (%s, %s, %s)'
-                            with cnx.cursor() as cursor:
-                                cursor.execute(query, (i['created_timestamp'], follower_id, follower_name))
-                            cnx.commit()
+                            allowed_ids = ['595906410']
+                            if follower_id not in allowed_ids:
+                                follower_name = i['source']['screen_name']
+                                params = { 'user_id': follower_id, 'skip_status': 1 }
+                                requests.post('https://api.twitter.com/1.1/blocks/create.json', params=params, auth=auth)
+                                requests.post('https://api.twitter.com/1.1/blocks/destroy.json', params=params, auth=auth)
+                                query = 'INSERT INTO follow_attempts (timestamp, user_id, screen_name) VALUES (%s, %s, %s)'
+                                with cnx.cursor() as cursor:
+                                    cursor.execute(query, (i['created_timestamp'], follower_id, follower_name))
+                                cnx.commit()
 
         return jsonify(response='ok')
 
@@ -97,11 +99,37 @@ def fetch(search, username=None, deleted=None, media=None):
                          params={'url': t['link'], 'omit_script': True, 'dnt': True})
         if r.status_code == requests.codes['ok']:
             html = r.json()['html']
+            # html += r'<br><button onclick="navigator.share({url: "https://twitter.com"})">test</button>'
+            html += f'<button class="share" onclick=\'navigator.share(JSON.parse("{{\\"url\\": \\"{t["link"]}\\"}}"))\'>Share</button>'
+            html += f'<button class="share" onclick="location.href=\'{t["link"]}\'">Open</button>'
         else:
+            with cnx.dict_cursor() as cursor:
+                cursor.execute('SELECT id, displayname FROM users WHERE username=%s', (t['username']))
+                data = cursor.fetchone()
+                displayname = data['displayname']
+                user_id = data['id']
+            r = requests.get('https://api.twitter.com/2/users/' + user_id, auth=auth, params={'user.fields': 'profile_image_url'})
+            payload = r.json()
+            user_image = ''
+            if 'data' in payload:
+                user_image = payload['data'].get('profile_image_url', '')
+            print(user_image)
             if not t['delete_reason']:
-                t['delete_reason'] = 'User is protected and followed. <a href={0}>Link to tweet</a>'.format(t['link'])
-            html += '<p class="tweettext">{0}</p><p>@{1} ({2})</p>'.format(t['text'].replace('\n', '<br>'), t['username'], t['delete_reason'])
-            html += '<p>{0}</p>'.format(t['timestamp'])
+                t['delete_reason'] = f"User is protected and followed. <a href={t['link']}>Link to tweet</a>"
+            html += (
+                '<div class="deletedwrapper">'
+                '<div class="deletedheader">'
+                '<div class="avatarplaceholder" style="background-image: url({4});"></div>'
+                '<div class="headerwrapper">'
+                '<div class="headerwrapperinner">'
+                '<div class="displayname">{0}</div>'
+                '<div class="username">@{1}</div>'
+                '</div></div></div>'
+                '<div class="tweettext">{2}</div>'
+                '</div>'
+                '<p>@{1} ({3})</p>'.format(displayname, t['username'], t['text'].replace('\n', '<br>'), t['delete_reason'], user_image)
+            )
+            html += f"<p>{t['timestamp']}</p>"
             html += '<p>No fav/retweet information</p>' if t['favs'] == 0 else '<p>❤️ {0}  ♻️ {1}</p>'.format(t['favs'], t['retweets'])
             directory = os.path.join(current_app.instance_path, 'twitter_media', t['id'])
             if os.path.exists(directory):
@@ -109,10 +137,11 @@ def fetch(search, username=None, deleted=None, media=None):
                 for f in files:
                     local_file = url_for('.static', filename='twitter_media/{0}/{1}'.format(t['id'], os.path.split(f)[1]))
                     if os.path.splitext(f)[1] == '.mp4':
-                        html += '<video class="tweetmedia" src="{0}#t=0.1" type="video/mp4" controls></video><br>'.format(local_file)
-                        html += '<a href="{0}">Link to video</a><br>'.format(local_file)
+                        html += f'<video class="tweetmedia" src="{local_file}#t=0.1" type="video/mp4" controls></video><br>'
+                        # html += f'<a href="{local_file}">Link to video</a><br>'
+                        html += f'<button class="share" onclick=\'navigator.share(JSON.parse("{{\\"url\\": \\"{local_file}\\"}}"))\'>Share</button>'
                     else:
-                        html += '<img class="tweetmedia" src="{0}"><br>'.format(local_file)
+                        html += f'<img class="tweetmedia" src="{local_file}"><br>'
     return html
 
 
@@ -124,14 +153,18 @@ def validate_crc(crc_token):
     Args:
         crc_token (str): crc_token query argument value
     """
-    import base64, hashlib, hmac
+    import base64
+    import hashlib
+    import hmac
     sha256_hash_digest = hmac.new(config['consumer_secret'].encode(),
                                   msg=crc_token.encode(), digestmod=hashlib.sha256).digest()
     return jsonify(response_token='sha256=' + base64.b64encode(sha256_hash_digest).decode())
 
 
 def save_tweet(tweet):
-    import json, datetime, html
+    import datetime
+    import html
+    import json
     favsquery = ('INSERT INTO favorites (id, user_id, text, timestamp, favs, retweets, raw_json, in_reply_to) '
                  'VALUES (%s, %s, %s, %s, %s, %s, %s, %s) '
                  'ON DUPLICATE KEY UPDATE favs=%s, retweets=%s, is_deleted=0, raw_json=%s')
@@ -157,7 +190,9 @@ def save_tweet(tweet):
 
 
 def save_media(tweet):
-    import shutil, furl
+    import shutil
+
+    import furl
     try:
         media = (tweet['extended_tweet']['extended_entities']['media']
                  if tweet['truncated']

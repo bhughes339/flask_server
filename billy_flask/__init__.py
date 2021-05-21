@@ -23,7 +23,7 @@ def register_blueprints(app):
     for p in setuptools.find_packages(path):
         if p not in exclude:
             try:
-                module = '{0}.blueprints.{1}'.format(__name__, p)
+                module = f'{__name__}.blueprints.{p}'
                 bp = importlib.import_module(module).bp
                 app.register_blueprint(bp)
             except Exception as e:

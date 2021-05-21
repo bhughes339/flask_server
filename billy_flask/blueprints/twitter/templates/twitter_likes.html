@@ -1,113 +1,170 @@
 <html>
 <head>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <meta name='viewport' content='width=516'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=516, user-scalable=no">
+    <meta name="twitter:widgets:theme" content="dark">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="msapplication-TileImage" content="{{ url_for('.static', filename='icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('.static', filename='icon.png') }}" sizes="144x144">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-typeahead/2.10.6/jquery.typeahead.min.js"></script>
-    <script>
-    // JS loader code from https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/set-up-twitter-for-websites
-    window.twttr = (function(d, s, id) {
-        var js, fjs = d.getElementsByTagName(s)[0],
-        t = window.twttr || {};
-        if (d.getElementById(id)) return t;
-        js = d.createElement(s);
-        js.id = id;
-        js.src = "https://platform.twitter.com/widgets.js";
-        fjs.parentNode.insertBefore(js, fjs);
-
-        t._e = [];
-        t.ready = function(f) {
-            t._e.push(f);
-        };
-
-        return t;
-    }(document, "script", "twitter-wjs"));
-    </script>
-    <script type=text/javascript>
-    $(document).ready(function() {
-        $('.getrandom').click(function() {
+    <!-- <script type="module" src="{{ url_for('.static', filename='main.js') }}"></script> -->
+    <script type='text/javascript'>
+$(document).ready(function () {
+    $('.getrandom').click(function () {
+        doSearch();
+    });
+    $(".typeahead__container").on("keydown", function (e) {
+        if (e.which == 13) {
             doSearch();
-        });
-        $(".typeahead__container").on("keydown", function(e) {
-            if (e.which == 13) {
-                doSearch();
-            }
-        });
-        $.typeahead({
-            input: '.user-list',
-            source: {
-                ajax: {
-                    url: "{{ url_for('.get_twitter_userlist') }}"
-                }
-            },
-            callback: {
-                onInit: function (node) {
-                    console.log('Typeahead Initiated on ' + node.selector);
-                }
-            }
-        });
-        $.typeahead({
-            input: '.search',
-            callback: {
-                onInit: function (node) {
-                    console.log('Typeahead Initiated on ' + node.selector);
-                }
-            }
-        });
+        }
     });
-    function doSearch() {
-        var data = {
-            search: $('.search').val(),
-            user: $('.user-list').val()
-        }
-        if ($('#deleted').prop('checked')) {
-            data['deleted'] = 1;
-        }
-        if ($('#media').prop('checked')) {
-            data['media'] = 1;
-        }
-        $.ajax({
-            method: 'GET',
-            url: "{{ url_for('.get_twitter_fav') }}",
-            data: data,
-            success: function(result) {
-                $('#tweet').html(result);
-                if (result.charAt(1) == "b") {
-                    $('#tweet').hide();
-                    twttr.widgets.load(document.getElementById("tweet"));
-                }
+    $.typeahead({
+        input: '.user-list',
+        source: {
+            ajax: {
+                url: "{{ url_for('.get_twitter_userlist') }}"
             }
-        });
+        },
+        callback: {
+            onInit: function (node) {
+                console.log('Typeahead Initiated on ' + node.selector);
+            }
+        }
+    });
+    $.typeahead({
+        input: '.search',
+        callback: {
+            onInit: function (node) {
+                console.log('Typeahead Initiated on ' + node.selector);
+            }
+        }
+    });
+});
+// JS loader code from https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/set-up-twitter-for-websites
+window.twttr = (function (d, s, id) {
+    console.log(d, s, id);
+    var js, fjs = d.getElementsByTagName(s)[0],
+        t = window.twttr || {};
+    if (d.getElementById(id)) return t;
+    js = d.createElement(s);
+    js.id = id;
+    js.src = "https://platform.twitter.com/widgets.js";
+    fjs.parentNode.insertBefore(js, fjs);
+
+    t._e = [];
+    t.ready = function (f) {
+        t._e.push(f);
+    };
+
+    return t;
+}(document, "script", "twitter-wjs"));
+twttr.ready(function (twttr) {
+    twttr.events.bind('rendered',
+        function (event) {
+            $('#tweet').show();
+        }
+    );
+});
+function doSearch() {
+    var data = {
+        search: $('.search').val(),
+        user: $('.user-list').val()
     }
-    twttr.ready(function (twttr) {
-        twttr.events.bind('rendered',
-            function (event) {
-                $('#tweet').show();
+    if ($('#deleted').prop('checked')) {
+        data['deleted'] = 1;
+    }
+    if ($('#media').prop('checked')) {
+        data['media'] = 1;
+    }
+    $.ajax({
+        method: 'GET',
+        url: "{{ url_for('.get_twitter_fav') }}",
+        data: data,
+        success: function (result) {
+            $('#tweet').html(result);
+            if (result.charAt(1) == "b") {
+                $('#tweet').hide();
+                twttr.widgets.load(document.getElementById("tweet"));
+                $('#tweet').show(); // twttr.events.bind is not working for some reason
             }
-        );
+        }
     });
+}
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-typeahead/2.10.6/jquery.typeahead.min.css" />
     <style>
-        body {background-color: lightblue;}
-        .wrapper {display: inline-block; position: relative; width: 500px;}
+        body {background-color: #171F2A; touch-action: manipulation; color: white;}
+        .wrapper {
+            display: inline-block;
+            position: relative;
+            width: 500px;}
         .column {float: left;}
         .newcolumn {float: left; margin-left: 20px;}
         input {margin-bottom:5px;}
+
+        .deletedwrapper,
+        .avatarplaceholder,
+        .deletedheader,
+        .headerwrapper,
+        .headerwrapperinner,
+        .displayname,
+        .username,
         .tweettext {
-            border-bottom: 2px solid black;
-            padding: 20px;
-            font: normal normal 16px/1.4 Helvetica,Roboto,"Segoe UI",Calibri,sans-serif;
-            color: #1c2022;
-            background-color: white;
+            display: flex;
+            flex-basis: auto;
+            flex-direction: column;
+            flex-shrink: 1;
+        }
+        .deletedwrapper {
+            background-color: #171F2A;
+            font-family: "Helvetica Neue", Roboto, "Segoe UI", Calibri, sans-serif;
+            border-color: #eee #ddd #bbb;
+            border-radius: 5px;
+            border-style: solid;
+            border-width: 1px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+            margin: 10px 5px;
+            padding: 16px;
+            width: 456px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .avatarplaceholder {
+            width: 49px;
+            height: 49px;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .deletedheader {
+            flex-direction: row;
+            padding-bottom: 10px;
+        }
+        .headerwrapper {
+            padding-left: 5px;
+            justify-content: center;
+        }
+        .headerwrapperinner {
+            font-size: 15px;
+        }
+        .displayname {
+            font-weight: 700;
+        }
+        .username {
+            color: #6E7C8A;
+        }
+        .tweettext {
+            font-size: 19px;
+            font-weight: normal;
+            line-height: inherit;
         }
         .typeahead__field, .typeahead__list{width:300px;}
         #tweet {
             width: 498px;
-            
         }
         .tweetmedia {max-width:500px;}
         .getrandom {width:100px; height:100px; font-size: 2em; position: fixed;}
+        .share {font-size: 2em;}
     </style>
 </head>
 <body>
@@ -115,18 +172,18 @@
         <div class="typeahead__container">
             <div class="typeahead__field">
                 <span class="typeahead__query">
-                    <input class="user-list" name="user-list[query]" type="search" placeholder="Username" autocomplete="off">
+                    <input class="user-list" name="user-list[query]" type="search" placeholder="Username" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 </span>
             </div>
         </div><br>
         <div class="typeahead__container">
             <div class="typeahead__field">
                 <span class="typeahead__query">
-                    <input class="search" name="search[query]" type="search" placeholder="Text to search" autocomplete="off">
+                    <input class="search" name="search[query]" type="search" placeholder="Text to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 </span>
             </div><br>
-            <input type="checkbox" id="deleted" value="deleted" />Deleted
-            <input type="checkbox" id="media" value="media" />Tweets with media
+            <input type="checkbox" id="deleted" value="deleted" /> Deleted
+            <input type="checkbox" id="media" value="media" /> Tweets with media
         </div>
         <div id="tweet"></div>
     </div>

@@ -2,7 +2,7 @@ import random
 
 import requests
 from flask import (Blueprint, Response, current_app, jsonify, render_template,
-                   request, url_for)
+                   request, session, url_for)
 
 from billy_flask.db import get_db
 
@@ -19,7 +19,14 @@ def setup():
     config = current_app.config['TWITCH']
     cnx = get_db('twitch')
     headers['Client-ID'] = config['client_id']
-
+    if not session.get('access_token'):
+        r = requests.post('https://id.twitch.tv/oauth2/token', params={
+            'client_id': config['client_id'],
+            'client_secret': config['client_secret'],
+            'grant_type': 'client_credentials'
+        })
+        session['access_token'] = r.json()['access_token']
+    headers['Authorization'] = f"Bearer {session['access_token']}"
 
 @bp.route('/surf')
 def twitch_surf():
@@ -48,6 +55,7 @@ def get_random_stream():
     if r.status_code != requests.codes['ok']:
         return jsonify('error')
     response = r.json()
+    from pprint import pprint
     if '_total' not in response:
         return jsonify('error')
     query['offset'] = random.randrange(int(response['_total']))
@@ -64,11 +72,13 @@ def get_random_stream():
         response = r.json()
     # Get Helix stream object
     payload = None
+    print(response)
     try:
         payload = get_helix_stream(response['streams'][0]['channel']['_id'])
     except:
-        pass
-    return jsonify(payload if payload else {})
+        payload = {}
+    print(payload)
+    return jsonify(payload)
 
 
 @bp.route('/_search_streams', methods=['GET'])
@@ -116,10 +126,8 @@ def get_game_name():
     try:
         game_name = r.json()['data'][0]['name']
     except:
-        game_name = ''
-    return Response(game_name,
-                    mimetype='text/plain'
-    )
+        game_name = 'n/a'
+    return Response(game_name, mimetype='text/plain')
 
 
 @bp.route('/_group_update')
@@ -181,19 +189,8 @@ def get_helix_stream(channel_id):
     r = requests.get(url, headers=headers, params=query)
     if r.status_code != requests.codes['ok']:
         return None
-    payload['game_name'] = r.json()['data'][0]['name']
+    try:
+        payload['game_name'] = r.json()['data'][0]['name']
+    except:
+        payload['game_name'] = 'n/a'
     return payload
-
-
-@bp.route('/_webhook_test', methods=['GET', 'POST'])
-def webhook_test():
-    print('hello???')
-    if request.method == 'GET':
-        return Response(request.args.get('hub.challenge', ''),
-                        mimetype='text/plain')
-    else:
-        if request.is_json:
-            print(request.get_json())
-        else:
-            print('no')
-    return jsonify('ok')

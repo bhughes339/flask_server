@@ -9,6 +9,16 @@ bp = Blueprint('spotify', __name__,
                url_prefix='/spotify', template_folder='templates')
 config = None
 
+OAUTH_PARAMS = {
+    'auth_url': 'https://accounts.spotify.com/authorize',
+    'auth_params': {
+        'response_type': 'code',
+        'scope': 'user-top-read'
+    },
+    'callback_url': 'https://accounts.spotify.com/api/token',
+    'callback_params': { 'grant_type': 'authorization_code' }
+}
+
 
 @bp.before_request
 def setup():
@@ -19,60 +29,49 @@ def setup():
 @bp.route('/')
 @bp.route('/top_artists')
 def get_top_artists():
-    if 'spotify_access_token' in session:
-        html = process_top(session['spotify_access_token'], 'artists')
+    if 'oauth_access_token' in session:
+        html = process_top(session['oauth_access_token'], 'artists')
         if html:
             return render_template('top.html', top_type='artists', top_list=html)
-        del session['spotify_access_token']
-    session['spotify_redirect'] = url_for('.get_top_artists')
-    return redirect(auth(url_for('.get_auth', _external=True)))
+        del session['oauth_access_token']
+    return oauth_flow(url_for(request.endpoint))
 
 
 @bp.route('/top_tracks')
 def get_top_tracks():
-    if 'spotify_access_token' in session:
-        html = process_top(session['spotify_access_token'], 'tracks')
+    if 'oauth_access_token' in session:
+        html = process_top(session['oauth_access_token'], 'tracks')
         if html:
             return render_template('top.html', top_type='tracks', top_list=html)
-        del session['spotify_access_token']
-    session['spotify_redirect'] = url_for('.get_top_tracks')
-    return redirect(auth(url_for('.get_auth', _external=True)))
+        del session['oauth_access_token']
+    return oauth_flow(url_for(request.endpoint))
 
 
 @bp.route('/auth')
-def get_auth():
+def oauth_flow(dest_url=None):
+    import base64, requests
+    if dest_url:
+        session['oauth_redirect'] = dest_url
+        params = {
+            'client_id': config['client_id'],
+            'redirect_uri': url_for('.oauth_flow', _external=True),
+            **OAUTH_PARAMS['auth_params']
+        }
+        r = requests.Request('GET', url = OAUTH_PARAMS['auth_url'], params=params).prepare()
+        return redirect(r.url)
     code = request.args.get('code')
-    access_token = callback(url_for('.get_auth', _external=True), code)
-    session['spotify_access_token'] = access_token
-    return redirect(session['spotify_redirect'])
-
-
-def auth(uri):
-    url = 'https://accounts.spotify.com/authorize'
-    params = {
-        'client_id': config['client_id'],
-        'response_type': 'code',
-        'scope': 'user-top-read',
-        'redirect_uri': uri
-    }
-    r = requests.Request('GET', url, params=params).prepare()
-    return r.url
-
-
-def callback(uri, code):
-    url = 'https://accounts.spotify.com/api/token'
     payload = {
-        'grant_type': 'authorization_code',
         'code': code,
-        'redirect_uri': uri
+        'redirect_uri': url_for('.oauth_flow', _external=True),
+        **OAUTH_PARAMS['callback_params']
     }
-    b64 = base64.b64encode('{0}:{1}'.format(config['client_id'], config['client_secret']).encode('ascii'))
-    headers = {
-        'Authorization': 'Basic ' + b64.decode()
-    }
-    r = requests.post(url, headers=headers, data=payload)
-    response = r.json()
-    return response['access_token']
+    b64 = base64.b64encode(f"{config['client_id']}:{config['client_secret']}".encode('ascii'))
+    headers = { 'Authorization': f'Basic {b64.decode()}' }
+    r = requests.post(OAUTH_PARAMS['callback_url'], headers=headers, data=payload)
+    session['oauth_access_token'] = r.json()['access_token']
+    dest_url = session['oauth_redirect']
+    del session['oauth_redirect']
+    return redirect(dest_url)
 
 
 def process_top(access_token, top_type):
@@ -104,6 +103,6 @@ def list_to_html(divname, response, active=False):
                    else '')
         # url = i['external_urls']['spotify']
         url = i['uri']
-        output += '<li><a href="{0}">{1}{2}</a></li>'.format(url, artists, i['name'])
+        output += f"<li><a href=\"{url}\">{artists}{i['name']}</a></li>"
     output += '</ol></div>'
     return output

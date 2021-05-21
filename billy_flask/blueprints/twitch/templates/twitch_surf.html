@@ -203,9 +203,9 @@ $(document).ready(function() {
     } else {
         startEventHandler();
     }
-    $('#random').click(function() {
-        getRandom();
-    });
+    // $('#random').click(function() {
+    //     getRandom();
+    // });
     $('#back').click(function() {
         backButton();
     });
@@ -215,17 +215,17 @@ $(document).ready(function() {
     $('#streamlabel').click(function() {
         copyTextToClipboard(`https://www.twitch.tv/${currentStream.user_name}`);
     });
-    $('#blacklist').click(function() {
-        if (currentStream.game_name) {
-            badGames.push(currentStream.game_name);
-        }
-        getRandom();
-    });
-    $('#whitelist').click(function() {
-        if (currentStream.game_name) {
-            getRandom(currentStream.game_name);
-        }
-    });
+    // $('#blacklist').click(function() {
+    //     if (currentStream.game_name) {
+    //         badGames.push(currentStream.game_name);
+    //     }
+    //     getRandom();
+    // });
+    // $('#whitelist').click(function() {
+    //     if (currentStream.game_name) {
+    //         getRandom(currentStream.game_name);
+    //     }
+    // });
     $(window).resize(function() {
         if (player) {
             player.setWidth($('#wrapper').width());
@@ -260,9 +260,8 @@ $(document).ready(function() {
     });
 
     $('#streamtypeahead').bind('typeahead:select', function(event, selection) {
-        console.log(event);
-        console.log(selection);
         $('#streamtypeahead').typeahead('val', '');
+        console.log(selection);
         $.ajax({
             url: fetchUrl,
             data: {

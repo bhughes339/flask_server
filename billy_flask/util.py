@@ -28,3 +28,20 @@ def download(url, folder, basename=None, headers={}):
         localfile = os.path.join(folder, filename)
         with open(localfile, 'wb') as out_file:
             shutil.copyfileobj(r.raw, out_file)
+
+
+def save_request(uuid, request, printable=False):
+    req_data = {}
+    req_data['uuid'] = uuid
+    req_data['endpoint'] = request.endpoint
+    req_data['method'] = request.method
+    req_data['cookies'] = request.cookies
+    req_data['data'] = request.data
+    req_data['headers'] = dict(request.headers)
+    req_data['headers'].pop('Cookie', None)
+    req_data['args'] = request.args
+    req_data['form'] = request.form
+    req_data['remote_addr'] = request.remote_addr
+    if printable:
+        req_data['data'] = req_data['data'].decode('utf-8')
+    return req_data

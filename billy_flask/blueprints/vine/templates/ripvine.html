@@ -48,19 +48,19 @@
         p { display: inline-block; }
         .wrapper { max-height: 480px; max-width: 480px; }
         #vine { width: 100%; }
-        #sharelink { color: white; padding: 10px; border: 1px solid white; border-radius: 5px; }
+        #sharelink { color: white; padding: 10px; border: 1px solid white; border-radius: 5px; position:fixed; bottom: 0; right: 0; }
         label { width: 120px; }
         input[type="checkbox"] { display: none; }
-        input[type="checkbox"] + label { position:absolute; bottom: 0; left: 0; padding: 10px; filter: grayscale(100%); }
+        input[type="checkbox"] + label { position:fixed; bottom: 0; left: 0; padding: 10px; filter: grayscale(100%); }
         input[type="checkbox"]:checked + label { filter: grayscale(0); }
     </style>
 </head>
 <body>
     <div class="wrapper">
         <video id="vine" class="vine" autoplay playsinline></video>
+        <span id="sharelink">Share this video</span>
+        <input type="checkbox" id="loop"><label for="loop"><img src="{{ url_for('.static', filename='loop.png') }}" style="width:100%"></label>
     </div>
     <br>
-    <span id="sharelink">Share this video</span>
-    <input type="checkbox" id="loop"><label for="loop"><img src="{{ url_for('.static', filename='loop.png') }}" style="width:100%"></label>
 </body>
 </html>
