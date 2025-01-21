@@ -28,30 +28,10 @@ Usage format: http://example.com/youtube/<channel_id>
 
 ## Setup
 
-NOTE: These instructions were tested using `bash` in a Debian-based Linux distribution.
-
-Create new venv in the project root and activate:
-
-```bash
-cd /path/to/flask_server
-python3 -m venv venv
-. venv/bin/activate
-```
-
-Install project and its dependencies:
-
-```bash
-pip3 install -e .
-```
-
-At this point the root project folder `flask_server` should have at least these components:
+Install with `uv`:
 
 ```
-flask_server/
-    billy_flask/
-    instance/
-        config.cfg.example
-    setup.py
+uv sync
 ```
 
 Copy `instance/config.cfg.example` to `instance/config.cfg` and set config options

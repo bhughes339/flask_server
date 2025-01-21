@@ -383,7 +383,9 @@ def get_favs():
                 "features": json.dumps(q_features)
             }
             r = requests.request("GET", url, headers=headers, params=querystring)
-            entries = r.json()["data"]["user"]["result"]["timeline_v2"]["timeline"]["instructions"][0]["entries"]
+            print(r.headers)
+            payload = r.json()
+            entries = payload["data"]["user"]["result"]["timeline_v2"]["timeline"]["instructions"][0]["entries"]
             q_variables["cursor"] = entries[-1]["content"]["value"]
             for i in entries:
                 if i["content"]["entryType"] == "TimelineTimelineItem":
