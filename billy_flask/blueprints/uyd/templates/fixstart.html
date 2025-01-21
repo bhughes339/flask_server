@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>UYD Replay - Episode {{ ep_num }}</title>
+    <meta name="viewport" content="width=516, user-scalable=no">
+    <meta name="msapplication-TileImage" content="{{ url_for('.static', filename='uyd.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='uyd.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('.static', filename='uyd.png') }}" sizes="144x144">
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <style>
+        body {
+            touch-action: manipulation;
+        }
+        .plyr {
+            position: fixed;
+            bottom: 50px;
+            width: 500px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Episode {{ ep_num }}</h1>
+    <br>
+    <button id="skip" style="height: 200px; width: 200px;">Next episode</button>
+    <button id="update" style="height: 200px; width: 200px;">Update start time</button>
+    <button id="back" style="height: 200px; width: 200px;">-5s</button>
+    <audio id="player" controls autoplay playsinline>
+        <source src="{{ url }}#t={{ time }}" type="{{ mime }}" />
+    </audio>
+</body>
+
+<script>
+    const player = new Plyr('#player', {
+        invertTime: false,
+    });
+
+    function replaySkip() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("GET", `{{ url_for('.fixstart_skip') }}?ep={{ ep_num }}`);
+        xhttp.onload = (event) => {
+            var next_ep = JSON.parse(xhttp.response).next_ep;
+            location.replace(`{{ url_for('.fixstart') }}?ep=${next_ep}`);
+        }
+        xhttp.send();
+    }
+
+    document.querySelector("#skip").onclick = replaySkip;
+
+    document.querySelector("#update").onclick = () => {
+        var xhttp = new XMLHttpRequest();
+        var time = Math.max(player.currentTime - 3, 0);
+        xhttp.open("GET", `{{ url_for('.replay_update_start') }}?episode={{ ep_num }}&time=${time}`);
+        xhttp.onload = () => {
+            replaySkip();
+        }
+        xhttp.send();
+    }
+
+    document.querySelector("#back").onclick = () => {
+        player.currentTime -= 5;
+    }
+
+</script>
+
+</html>

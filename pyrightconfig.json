@@ -1,0 +1,6 @@
+{
+    "exclude": [
+        "instance",
+        "**/static"
+    ]
+}

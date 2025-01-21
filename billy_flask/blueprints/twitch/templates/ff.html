@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/theme.css" />
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
+    <script src="https://cdn.vidstack.io/player" type="module"></script>
+</head>
+
+<body>
+    <media-player src="{{ url }}">
+        <media-provider></media-provider>
+        <media-video-layout></media-video-layout>
+    </media-player>
+    <p>Resumed time: {{ timestamp }}</p>
+</body>
+
+<script>
+    const player = document.querySelector("media-player");
+
+    function setTime(event) {
+        console.log("Setting time to {{ timestamp }}");
+        player.currentTime = {{ resumed_time }};
+    }
+
+    player.addEventListener("can-play", (event) => {
+        console.log("Setting time to {{ timestamp }}");
+        player.currentTime = {{ resumed_time }};
+    }, { once: true });
+
+    player.addEventListener("play", (event) => {
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("GET", `{{ url_for('.twitch_ffclear') }}`);
+        xhttp.send();
+    }, { once: true });
+
+    document.addEventListener("DOMContentLoaded", function (event) {
+        setInterval(function () {
+            var xhttp = new XMLHttpRequest();
+            if (!player.paused) {
+                var time = player.currentTime;
+                xhttp.open("GET", `{{ url_for('.twitch_ffupdate') }}?time=${time}`);
+                xhttp.send();
+            }
+        }, 1000);
+    });
+
+</script>
+
+</html>

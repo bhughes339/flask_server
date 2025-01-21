@@ -3,7 +3,7 @@ import os
 
 # Flask development server:
 #   cd to flask_server root
-#   . venv/bin/activate ; export FLASK_APP=billy_flask ; export FLASK_DEBUG=1 ; python3 -m flask run --host 0.0.0.0 ; deactivate
+#   . .venv/bin/activate ; export FLASK_APP=billy_flask ; export FLASK_DEBUG=1 ; python3 -m flask run --host 0.0.0.0 ; deactivate
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)

@@ -9,6 +9,6 @@ setup(
     packages=['billy_flask'],
     include_package_data=True,
     install_requires=[
-        'Flask', 'requests', 'furl', 'pymysql', 'requests_oauthlib'
+        'Flask', 'requests', 'furl', 'pymysql', 'requests_oauthlib', 'pynacl', 'flask-cors'
     ],
 )

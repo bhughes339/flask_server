@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Twitch - Latest Watched</title>
+    <link rel="shortcut icon" href="{{ url_for('.static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <style>
+        body {
+            background-color: #0e0e10;
+            color: #e1e1e3;
+            font-size: 2.0em;
+        }
+
+        a {
+            color: #67a6ff;
+            text-decoration: none;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #959596;
+            border-collapse: collapse;
+            padding: 5px;
+        }
+
+        .username>.userlink {
+            color: #e1e1e3;
+        }
+
+        .following>.username>.userlink {
+            color: #affda9;
+        }
+
+        .progress-wrapper {
+            margin: 5px -5px -5px -5px;
+            width: auto;
+        }
+
+        .progress {
+            background-color: rgb(153, 0, 255);
+            height: 5px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@latest/sortable.min.js"></script>
+    <script type="text/javascript">
+        function followToggle() {
+            var checkbox = document.getElementById("followtoggle");
+            for (ele of document.querySelectorAll("tr:not(.following):not(.header)")) {
+                ele.style = (checkbox.checked) ? "display: none;" : "";
+            }
+        }
+        function clearWatched(videoId) {
+            const req = new XMLHttpRequest();
+            fetch("{{ url_for('.twitch_remove_recent') }}", {
+                method: "POST",
+                body: JSON.stringify({"video_id": videoId}),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+                .then((response) => response.json())
+                .then((json) => { if (json.ok) { document.getElementById(videoId).style = "display: none;"; }});
+        }
+        function userFilter() {
+            var user = document.getElementById("userfilter").value
+            for (ele of document.querySelectorAll("tr:not(.header)")) {
+                if (!user) {
+                    ele.style = ""
+                } else {
+                    ele.style = (ele.querySelector("td.username").textContent == user) ? "" : "display: none;"
+                }
+            }
+            if (!user) {
+                followToggle()
+            }
+        }
+        document.addEventListener("DOMContentLoaded", function (event) {
+            followToggle();
+        });
+    </script>
+</head>
+
+<body>
+    <input class="followtoggle" type="checkbox" id="followtoggle" value="1" checked="checked"
+        onchange="followToggle()" /> Follows only
+    <br>
+
+    <label for="userfilter">Filter by username:</label>
+    <select name="userfilter" id="userfilter" onchange="userFilter()">
+        <option value=""></option>
+        {% for u in users -%}
+        <option value="{{ u }}">{{ u }}</option>
+        {% endfor %}
+    </select>
+    <br>
+    <table class="sortable">
+        <thead>
+            <tr class="header">
+                <th>User</th>
+                <th>Title</th>
+                <th>Game</th>
+                <th>Date</th>
+                <th>Last Watched</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in vids -%}
+            <tr id="{{ d.video_id }}" {% if d.following -%}class="following" {% endif %}>
+                <td class="username"><a href="https://twitch.tv/{{ d.user }}/videos?filter=archives&sort=time" class="userlink">{{ d.user }}</a></td>
+                <td>
+                    <a href="{{ url_for('.twitch_vod_resume', video_id=d.video_id, _external=True) }}" title="{{ d.title }}">{{ d.title[:32] }}</a>
+                    <div class="progress-wrapper" title="{{ d.position }} | {{ d.progress }}%">
+                        <div class="progress" style="width: {{ d.progress }}%"></div>
+                    </div>
+                </td>
+                <td title="{{ d.game }}">{{ d.game[:32] }}</td>
+                <td title="{{ d.date }}" data-sort="{{ d.epoch_date }}">{{ d.relative_date }}</td>
+                <td title="{{ d.last_watched }}" data-sort="{{ d.last_watched_epoch }}">{{ d.last_watched_relative }}</td>
+                <td><button onclick="clearWatched('{{ d.video_id }}')">Clear</button></td>
+                <td style="display: none;">{{ d.raw_json }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+
+</html>

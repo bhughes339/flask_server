@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <title>UYDPlay•{{ '%03d' % ep_num }} - {{ ep_date }}</title>
+    <meta name="viewport" content="width=516, user-scalable=no">
+    <meta name="msapplication-TileImage" content="{{ url_for('.static', filename='uyd.png') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="theme-color" content="#212529">
+    <link rel="shortcut icon" href="{{ url_for('.static', filename='favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('.static', filename='uyd.png') }}" sizes="144x144">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <script src="https://cdn.vidstack.io/player" type="module"></script>
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/theme.css" />
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/audio.css" />
+
+    <!-- <script src="https://cdn.vidstack.io/plyr" type="module"></script>
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player.css" />
+    <link rel="stylesheet" href="https://cdn.vidstack.io/plyr.css" /> -->
+
+    <style>
+        body {
+            touch-action: manipulation;
+            width: 500px;
+            margin: 8px;
+        }
+
+        .player {
+            position: fixed;
+            bottom: 50px;
+            left: 8px;
+            width: 500px;
+        }
+
+        .vds-audio-layout {
+            --audio-bg: rgb(43, 45, 49);
+        }
+        .plyr {
+            --plyr-audio-border: 1px solid rgb(96, 98, 104);
+            --plyr-audio-control-color: rgb(163, 165, 170);
+            --plyr-audio-controls-background: rgb(43, 45, 49);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Episode {{ ep_num }}</h1>
+    <h2>{{ ep_date }}</h2>
+    <p>Resumed time: {{ longtime }}</p>
+    <br>
+    <media-player src="{{ url }}">
+        <media-provider></media-provider>
+        <media-audio-layout></media-audio-layout>
+    </media-player>
+    <br>
+    <p>Last saved time: <span id="savedtime">n/a</span></p>
+    <br>
+    <span style="font-size: 10em;" onclick="play_pause()">⏯️</span>
+    <br>
+    <a href="vlc://{{ url_full }}">VLC link</a>
+    <button id="skip" style="height: 200px; width: 200px; position: absolute; bottom: 10px; right: 10px;">Next episode</button>
+</body>
+
+<script>
+    const player = document.querySelector("media-player");
+
+    player.addEventListener("can-play", (event) => {
+        console.log("Setting time to {{ time }}");
+        player.currentTime = {{ time }};
+    }, {once: true});
+
+    var intervalId = setInterval(function () {
+        var xhttp = new XMLHttpRequest()
+        if (!player.paused) {
+            var time = player.currentTime;
+            xhttp.open("GET", `{{ url_for('.replay_update') }}?time=${time}`);
+            xhttp.onload = () => {
+                document.getElementById("savedtime").textContent = JSON.parse(xhttp.response).formatted_time
+            }
+            xhttp.send();
+        }
+    }, 1000);
+
+    function replaySkip() {
+        clearInterval(intervalId);
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("GET", `{{ url_for('.replay_skip') }}`);
+        xhttp.onload = () => {
+            location.reload();
+        }
+        xhttp.send();
+    }
+
+    function play_pause() {
+        (player.paused) ? player.play() : player.pause();
+    }
+
+    document.querySelector("#skip").onclick = replaySkip;
+
+    const observer = new MutationObserver(function (mutations, mutationInstance) {
+        const ele = player.querySelector("media-time");
+        if (ele) {
+            ele.toggleAttribute("remainder");
+            mutationInstance.disconnect();
+        }
+    });
+
+    observer.observe(document, {
+        childList: true,
+        subtree:   true
+    });
+
+</script>
+
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>UYD {{ ep }} | {{ date }}</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <script>
+function play_pause() {
+    let audio = document.getElementById('uyd');
+    (audio.paused) ? audio.play() : audio.pause();
+}
+    </script>
+</head>
+<body>
+    <h1>Episode {{ ep }}</h1><h2>{{ date }}</h2>
+    <audio id="uyd" crossorigin="anonymous" controls src="{{ src }}"></audio>
+    <br>
+    <button style="font-size: 5em;" onclick="play_pause()">⏯️</button>
+    <br>
+    <button style="font-size: 5em;" onclick="location.reload()">🔄</button>
+    <br>
+    <button id="gaintoggle" data-active="false" style="font-size: 5em;">Gain: ❌</button>
+    <br>
+    <div><input type="range" id="gainslider" name="gain" min="1" max="10" value="1" /><span id="gainvalue" style="padding-right: 5px;">1</span><label for="gain">Gain</label></div>
+    <!-- <button style="font-size: 5em;" data-active="false" id="comp">Enable compression</button> -->
+</body>
+<script>
+function changeGain(gainNode, value) {
+    gainNode.gain.value = value;
+    document.getElementById("gainvalue").textContent = value;
+}
+
+const audioElt = document.getElementById("uyd");
+const gainSlider = document.getElementById("gainslider");
+const gainToggle = document.getElementById("gaintoggle");
+
+gainSlider.onchange = () => {
+    document.getElementById("gainvalue").textContent = gainSlider.value;
+}
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const destNode = audioCtx.destination;
+
+const enableGain = false;
+
+if (enableGain) {
+    
+    console.log("setting up audio stuff...");
+    // Set up AudioContext
+    // var AudioContext = window.AudioContext || window.webkitAudioContext;
+    
+    // Create a MediaElementAudioSourceNode
+    // Feed the HTMLMediaElement into it
+    const sourceNode = new MediaElementAudioSourceNode(audioCtx, {
+        mediaElement: audioElt,
+    });
+    
+    const gainNode = new GainNode(audioCtx, {
+        gain: 1,
+    })
+    
+    // connect the AudioBufferSourceNode to the destination
+    sourceNode.connect(gainNode);
+    gainNode.connect(destNode);
+    
+    gainToggle.onclick = () => {
+        if (gainToggle.getAttribute("data-active") === "false") {
+            gainToggle.setAttribute("data-active", "true");
+            gainToggle.textContent = "Gain: ✅";
+    
+            gainNode.gain.value = parseFloat(gainSlider.value);
+        } else {
+            gainToggle.setAttribute("data-active", "false");
+            gainToggle.textContent = "Gain: ❌";
+    
+            gainNode.gain.value = 1;
+        }
+    };
+
+    gainSlider.onchange = () => { changeGain(gainNode, gainSlider.value); }
+} else {
+    gainToggle.onclick = () => {
+        if (gainToggle.getAttribute("data-active") === "false") {
+            gainToggle.setAttribute("data-active", "true");
+            gainToggle.textContent = "Gain: ✅";
+    
+            gainNode.gain.value = parseFloat(gainSlider.value);
+        } else {
+            gainToggle.setAttribute("data-active", "false");
+            gainToggle.textContent = "Gain: ❌";
+    
+            const sourceNode = new MediaElementAudioSourceNode(audioCtx, {
+                mediaElement: audioElt,
+            });
+            
+            const gainNode = new GainNode(audioCtx, {
+                gain: 4,
+            });
+
+            sourceNode.connect(gainNode);
+            gainNode.connect(destNode);
+        }
+    };
+}
+
+
+/*
+audioElt.addEventListener("play", () => {
+    if (!audioCtx) {
+        console.log("setting up audio stuff...");
+        // Set up AudioContext
+        // var AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+
+        const dest = audioCtx.destination
+
+        // Create a MediaElementAudioSourceNode
+        // Feed the HTMLMediaElement into it
+        const sourceNode = new MediaElementAudioSourceNode(audioCtx, {
+            mediaElement: audioElt,
+        });
+
+        const gainNode = new GainNode(audioCtx, {
+            gain: 1,
+        })
+
+        // connect the AudioBufferSourceNode to the destination
+        sourceNode.connect(gainNode);
+        gainNode.connect(dest);
+
+        const gainToggle = document.getElementById("gaintoggle");
+        gainToggle.onclick = () => {
+            if (gainToggle.getAttribute("data-active") === "false") {
+                gainToggle.setAttribute("data-active", "true");
+                gainToggle.textContent = "Gain: ✅";
+
+                gainNode.gain.value = parseFloat(gainSlider.value);
+            } else {
+                gainToggle.setAttribute("data-active", "false");
+                gainToggle.textContent = "Gain: ❌";
+
+                gainNode.gain.value = 1;
+            }
+        }
+        
+    }
+});
+*/
+</script>
+</html>

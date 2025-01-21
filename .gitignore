@@ -3,4 +3,5 @@ __pycache__
 instance/*
 !instance/config.cfg.example
 venv
+.venv
 billy_flask.egg-info

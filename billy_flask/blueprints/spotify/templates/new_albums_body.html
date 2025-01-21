@@ -1,0 +1,8 @@
+{% for artist in new_album_artists.keys() %}
+<h1 style="color: blue">{{ artist }}</h1>
+<div style="display: inline-grid"><ul>
+{% for album in new_album_artists[artist] %}
+<li><a href="{{ album['external_urls']['spotify'].replace('https://open.spotify.com/', 'spotify://') }}" class="{{ 'album' if album['album_type'] == 'album' else '' }}{{ ' added' if album['added_to_yearly'] else '' }}">({{ album['release_date'][5:].replace('-', '/') }}) {{ album['name'] }}</a></li>
+{% endfor %}
+</ul></div>
+{% endfor %}

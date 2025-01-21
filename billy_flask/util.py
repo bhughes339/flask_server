@@ -28,6 +28,7 @@ def download(url, folder, basename=None, headers={}):
         localfile = os.path.join(folder, filename)
         with open(localfile, 'wb') as out_file:
             shutil.copyfileobj(r.raw, out_file)
+    return localfile
 
 
 def save_request(uuid, request, printable=False):
@@ -45,3 +46,19 @@ def save_request(uuid, request, printable=False):
     if printable:
         req_data['data'] = req_data['data'].decode('utf-8')
     return req_data
+
+
+def seconds_to_time(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return (
+        (f"{h}h" if h else "") +
+        (f"{m:02d}m" if m else "") +
+        f"{s:02d}s"
+    )
+
+def time_to_seconds(time):
+    r = re.match(r"(?:(\d+)h)?(?:(\d+)m)?(\d+)s", time)
+    h, m, s = r.groups()
+    t = timedelta(hours=int(h or 0), minutes=int(m or 0), seconds=int(s))
+    return (t.days * 86400) + t.seconds

@@ -16,15 +16,16 @@ def mysql_warning():
 
 
 def get_db(database=None):
-    if 'db' not in g:
-        conf = current_app.config['MYSQL']
-        g.db = Connection(host=conf['host'], user=conf['user'],
-                          password=conf['passwd'], db=database, charset='utf8mb4')
-    else:
-        if g.db.db.decode() != database:
-            g.db.select_db(database)
-    
-    return g.db
+    with current_app.app_context():
+        if 'db' not in g:
+            conf = current_app.config['MYSQL']
+            g.db = Connection(host=conf['host'], user=conf['user'],
+                            password=conf['passwd'], db=database, charset='utf8mb4')
+        else:
+            if g.db.db.decode() != database:
+                g.db.select_db(database)
+        
+        return g.db
 
 # TODO: init-db code
 # @click.command('init-db')

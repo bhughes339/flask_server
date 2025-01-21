@@ -1,0 +1,13 @@
+[Unit]
+Description=Flask server on port 5000 using gunicorn3
+After=network.target mysql.service
+
+[Service]
+WorkingDirectory=/var/www/flask_server
+ExecStart=/var/www/flask_server/.venv/bin/gunicorn -t 120 -b127.0.0.1:5000 'billy_flask:create_app()'
+KillMode=process
+User=billy
+Group=billy
+
+[Install]
+WantedBy=multi-user.target

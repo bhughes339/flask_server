@@ -17,7 +17,11 @@ SPOTIFY = {
 
 TWITTER = {
     'consumer_key': '',
-    'consumer_secret': ''
+    'consumer_secret': '',
+    'access_key': '',
+    'access_secret': '',
+    'oauth2_key': '',
+    'oauth2_secret': ''
 }
 
 YOUTUBE = {
@@ -25,10 +29,31 @@ YOUTUBE = {
 }
 
 SLACK = {
-    'app_token': '',
-    'app_secret': ''
+    'user_token': '',
+    'signing_secret': '',
+    'bot_token': ''
 }
 
 TWITCH = {
-    'client_id': ''
+    'client_id': '',
+    'client_secret': '',
+    'user_token': '',
+    'graphql_token': '',
+    'graphql_client_id': '',
+}
+
+DISCORD = {
+    'api_endpoint': '',
+    'client_id': '',
+    'client_secret': '',
+    'public_key': '',
+    'app_id': '',
+    'dvvi_id': '',
+    'cred_token': ''
+}
+
+REDDIT = {
+    'client_id': '',
+    'client_secret': '',
+    'user_agent': ''
 }

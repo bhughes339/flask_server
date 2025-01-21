@@ -70,6 +70,7 @@ twttr.ready(function (twttr) {
 function doSearch() {
     var data = {
         search: $('.search').val(),
+        ocr: $('.ocr-search').val(),
         user: $('.user-list').val()
     }
     if ($('#deleted').prop('checked')) {
@@ -172,19 +173,26 @@ function doSearch() {
         <div class="typeahead__container">
             <div class="typeahead__field">
                 <span class="typeahead__query">
-                    <input class="user-list" name="user-list[query]" type="search" placeholder="Username" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    <input class="user-list" name="user-list[query]" type="search" placeholder="👤 Username" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 </span>
             </div>
         </div><br>
         <div class="typeahead__container">
             <div class="typeahead__field">
                 <span class="typeahead__query">
-                    <input class="search" name="search[query]" type="search" placeholder="Text to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    <input class="search" name="search[query]" type="search" placeholder="💬 Text to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 </span>
-            </div><br>
-            <input type="checkbox" id="deleted" value="deleted" /> Deleted
-            <input type="checkbox" id="media" value="media" /> Tweets with media
-        </div>
+            </div>
+        </div><br>
+        <div class="typeahead__container">
+            <div class="typeahead__field">
+                <span class="typeahead__query">
+                    <input class="ocr-search" name="ocr-search[query]" type="search" placeholder="📷 Search OCR image data" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                </span>
+            </div>
+        </div><br>
+        <input type="checkbox" id="deleted" value="deleted" /> Deleted
+        <input type="checkbox" id="media" value="media" /> Tweets with media
         <div id="tweet"></div>
     </div>
     <div style="height: 100px;"></div>

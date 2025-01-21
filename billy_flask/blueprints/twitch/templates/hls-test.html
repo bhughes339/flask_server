@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/theme.css" />
+    <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
+    <script src="https://cdn.vidstack.io/player" type="module"></script>
+</head>
+
+<body>
+    <media-player src="{{ url }}">
+        <media-provider></media-provider>
+        <media-video-layout></media-video-layout>
+    </media-player>
+</body>
+
+<script>
+    const player = document.querySelector("media-player");
+
+    player.addEventListener("play", (event) => {
+        console.log("Playing...");
+    }, { once: true });
+
+</script>
+
+</html>

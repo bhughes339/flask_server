@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=516, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="msapplication-TileImage" content="{{ url_for('.static', filename='gin.png') }}">
+    <meta name="theme-color" content="#212529">
+    <link rel="apple-touch-icon" href="{{ url_for('.static', filename='gin.png') }}" sizes="144x144">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <title>Gin</title>
+    <style>
+        body {
+            font-size: 2em;
+            touch-action: manipulation;
+            padding: 8px;
+        }
+
+        tr {
+            text-align: center;
+        }
+
+        #wrapper {
+            display: inline-block;
+            position: relative;
+            width: 500px;
+        }
+
+        #knockwrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #endroundwrapper {
+            display: flex;
+            width: 100%;
+            margin: auto;
+            padding: 0.5em;
+        }
+
+        #endroundwrapper button {
+            height: 3em;
+            margin: auto;
+        }
+
+        #endround {
+            flex-basis: 100%;
+        }
+
+        #undo {
+            flex-basis: 20%;
+        }
+
+        #knocktable tr {
+            display: flex;
+            justify-content: space-evenly;
+        }
+
+        .knockercolumn,.deadwoodcolumn {
+            display: flex;
+            justify-content: center;
+            width: 6em;
+            height: 2em;
+        }
+
+        .knockbutton, .ginbutton {
+            width: 100%;
+            align-content: center;
+        }
+
+        .deadwood {
+            width: 3em;
+            margin-right: 0.5em;
+        }
+
+        #knocktable th,
+        td {
+            padding: 5px;
+        }
+
+        #scorewrapper {
+            padding: 0.5em;
+        }
+
+        #scoretable {
+            width: 100%;
+        }
+
+        .roundcell {
+            border-right: 2px solid grey;
+        }
+
+        .scoretotal {
+            border-bottom: 2px solid grey;
+            color: #05b105;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="wrapper">
+        <div id="knockwrapper">
+            <table id="knocktable">
+                <tr>
+                    <th class="knockercolumn">Knocker</th>
+                    <th class="deadwoodcolumn">Deadwood</th>
+                </tr>
+                {% for i in [1, 2] %}
+                <tr player="{{ i }}">
+                    <td class="knockercolumn">
+                        <input type="radio" id="knocker{{ i }}" class="btn-check" name="knocker" autocomplete="off"
+                            onchange="chooseKnocker()">
+                        <label class="btn btn-outline-primary knockbutton" for="knocker{{ i }}">{{ "Billy" if i == 1 else "Mylynn" }}</label>
+                    </td>
+                    <td class="deadwoodcolumn">
+                        <input type="number" class="deadwood" inputmode="numeric" placeholder="0">
+                        <input type="checkbox" class="btn-check gincheck" id="gincheck{{ i }}" autocomplete="off"
+                            onchange="disableDeadwood()">
+                        <label class="btn btn-outline-info ginbutton" for="gincheck{{ i }}">Gin!</label>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            <div id="endroundwrapper">
+                <button id="endround" class="btn btn-success" onclick="endRound()" disabled>Submit</button>
+                <div style="width: 0.5em;"></div>
+                <button id="undo" class="btn btn-danger" onclick="undo()" disabled>Undo</button>
+            </div>
+        </div>
+
+        <div id="scorewrapper">
+            <table id="scoretable">
+                <tr class="scoreheader">
+                    <th class="roundcell">Round</th>
+                    <th style="width: 5em">Billy</th>
+                    <th style="width: 5em">Mylynn</th>
+                </tr>
+                <tr class="scoretotal">
+                    <td class="roundcell">*</td>
+                    <td id="player1total">0</td>
+                    <td id="player2total">0</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+<script>
+    var gameScore;
+
+    function createGameScoreObject() {
+        var date = (new Date()).toISOString();
+        return {
+            date: date,
+            names: {
+                1: document.querySelector("tr[player='1'] .knockbutton").textContent,
+                2: document.querySelector("tr[player='2'] .knockbutton").textContent,
+            },
+            rounds: [],
+            total: {
+                1: 0,
+                2: 0,
+            }
+        }
+    }
+
+    function saveResult() {
+        var request = new XMLHttpRequest();
+        request.open('post', '{{ url_for(".ginsave") }}', true);
+        request.setRequestHeader("Content-Type", "application/json");
+        request.send(JSON.stringify(gameScore));
+    }
+
+    const knockerRadioQuery = "input[name=knocker]";
+    const deadwoodValueQuery = ".deadwoodcolumn .deadwood";
+    const ginCheckboxQuery = ".deadwoodcolumn input[type=checkbox]";
+    const ginButtonQuery = ".deadwoodcolumn label[class*='ginbutton']";
+
+    var gameOver = false;
+
+    function classChange(e, classString) {
+        if (!classString) {
+            var oldClass = e.getAttribute("oldclass");
+            if (oldClass) {
+                e.setAttribute("class", oldClass);
+                e.removeAttribute("oldclass");
+            }
+        } else {
+            e.setAttribute("oldclass", e.getAttribute("class"));
+            e.setAttribute("class", classString);
+        }
+    }
+
+    function resetFields() {
+        for (i of document.querySelectorAll("input")) {
+            i.checked = false;
+            i.disabled = false;
+        }
+        for (i of document.querySelectorAll(deadwoodValueQuery)) {
+            i.value = "";
+        }
+        for (i of document.querySelectorAll(ginButtonQuery)) {
+            classChange(i);
+        }
+
+        document.getElementById("endround").disabled = true;
+    }
+
+    function disableDeadwood() {
+        for (i of document.querySelectorAll("input[class='deadwood']")) {
+            var ginChecked = i.parentElement.querySelector("input[class*='gincheck']:checked");
+            i.disabled = (ginChecked) ? true : false;
+            if (ginChecked) {
+                i.value = "";
+            }
+        }
+    }
+
+    function chooseKnocker() {
+        var checkedPlayer = document.querySelector("input[name=knocker]:checked");
+        if (!checkedPlayer) {
+            document.getElementById("endround").disabled = true;
+            return;
+        }
+        var knocker = checkedPlayer.closest("tr").getAttribute("player");
+        var loser = (knocker === "1") ? "2" : "1";
+
+        var playerRow = document.querySelector(`tr[player='${knocker}']`);
+        var ginButton = playerRow.querySelector(ginCheckboxQuery);
+        ginButton.checked = false;
+        ginButton.disabled = false;
+        classChange(playerRow.querySelector(ginButtonQuery));
+
+        playerRow = document.querySelector(`tr[player='${loser}']`);
+        ginButton = playerRow.querySelector(ginCheckboxQuery);
+        ginButton.checked = false;
+        ginButton.disabled = true;
+        classChange(playerRow.querySelector(ginButtonQuery), "btn btn-secondary ginbutton");
+
+        document.getElementById("endround").disabled = false;
+
+        disableDeadwood();
+    }
+
+    function newGame() {
+        gameScore = createGameScoreObject();
+        Array.from(document.querySelectorAll("#scoretable .scoreentry")).forEach((e) => e.remove());
+        tallyTotals();
+        resetFields();
+    }
+
+    function tallyTotals() {
+        for (i of [1, 2]) {
+            var total = Array.from(document.querySelectorAll(`#scoretable .scoreentry td:nth-of-type(${i+1})`)).reduce((partialSum, a) => partialSum + (parseInt(a.textContent || 0)), 0);
+            gameScore.total[i] = total;
+            document.querySelector(`#player${i}total`).textContent = total;
+            document.querySelectorAll(`#scoretable *:is(td, th):nth-of-type(${i+1})`).forEach((e) => e.bgColor = (total >= 100) ? "#67a6ff" : "");
+            var submitButton = document.querySelector("#endround");
+        }
+
+        saveResult();
+
+        gameOver = (gameScore.total[1] >= 100 || gameScore.total[2] >= 100)
+
+        if (gameOver) {
+            submitButton.textContent = "New Game";
+            submitButton.onclick = newGame;
+            submitButton.disabled = false;
+        } else {
+            submitButton.textContent = "Submit";
+            submitButton.onclick = endRound;
+            chooseKnocker();
+        }
+
+        document.querySelector("#undo").disabled = (Array.from(document.querySelectorAll("#scoretable .scoreentry")).length) ? false : true;
+    }
+
+    function updateScores(player, amount) {
+        gameScore.rounds.push(roundObject);
+
+        var rowArray = Array.from(document.querySelectorAll("#scoretable .scoreentry"));
+        var round;
+        if (!rowArray.length) {
+            round = 1;
+        } else {
+            round = 1 + parseInt(rowArray.pop().querySelector("td").textContent);
+        }
+
+        var newRow = document.createElement("tr");
+        newRow.innerHTML = `
+<tr>
+<td class="roundcell">${round}</td>
+<td>${(parseInt(player) === 1) ? amount : ""}</td>
+<td>${(parseInt(player) === 2) ? amount : ""}</td>
+</tr>
+`.trim();
+        newRow.setAttribute("class", "scoreentry");
+        document.querySelector("#scoretable").insertAdjacentElement('beforeend', newRow);
+
+        tallyTotals();
+    }
+
+    function newScoreRow(roundObject) {
+        var rowArray = Array.from(document.querySelectorAll("#scoretable .scoreentry"));
+        var round;
+        if (!rowArray.length) {
+            round = 1;
+        } else {
+            round = 1 + parseInt(rowArray.pop().querySelector("td").textContent);
+        }
+
+        var style;
+        if (roundObject.gin) {
+            style = "color: gold;"
+        } else if (roundObject.undercut) {
+            style = "color: #15d7eb;"
+        } else {
+            style = "";
+        }
+
+        var newRow = document.createElement("tr");
+        newRow.innerHTML = `
+<tr>
+<td class="roundcell">${round}</td>
+<td style="${style}">${(parseInt(roundObject.winner) === 1) ? roundObject.points : ""}</td>
+<td style="${style}">${(parseInt(roundObject.winner) === 2) ? roundObject.points : ""}</td>
+</tr>
+`.trim();
+        newRow.setAttribute("class", "scoreentry");
+        document.querySelector("#scoretable").insertAdjacentElement('beforeend', newRow);
+    }
+
+    function updateScoresNew(roundObject) {
+        gameScore.rounds.push(roundObject);
+        newScoreRow(roundObject);
+        tallyTotals();
+    }
+
+    function endRound() {
+        var knockerRow = document.querySelector(`${knockerRadioQuery}:checked`).closest("tr");
+        var loserRow = document.querySelector(`${knockerRadioQuery}:not(:checked)`).closest("tr");
+
+        var winner = knockerRow.getAttribute("player");
+
+        var knockerDeadwood = parseInt(knockerRow.querySelector(deadwoodValueQuery).value || 0);
+        var loserDeadwood = parseInt(loserRow.querySelector(deadwoodValueQuery).value || 0);
+
+        var points = Math.abs(loserDeadwood - knockerDeadwood);
+
+        var gin = false;
+        var undercut = false;
+
+        if (knockerRow.querySelector(ginCheckboxQuery).checked) {
+            gin = true;
+            points += 25;
+        } else if (loserDeadwood <= knockerDeadwood) {
+            undercut = true;
+            winner = loserRow.getAttribute("player");
+            points += 15;
+        }
+
+        console.log(`Winner: Player ${winner} | Points: ${points}`);
+
+        var p1Row = document.querySelector("tr[player='1']");
+        var p2Row = document.querySelector("tr[player='2']");
+        var roundObject = {
+            knocker: knockerRow.getAttribute("player"),
+            winner: winner,
+            points: points,
+            gin: gin,
+            undercut: undercut,
+            p1Deadwood: parseInt(p1Row.querySelector(deadwoodValueQuery).value || 0),
+            p2Deadwood: parseInt(p2Row.querySelector(deadwoodValueQuery).value || 0),
+        }
+
+        resetFields();
+        // updateScores(winner, points);
+        updateScoresNew(roundObject);
+    }
+
+    function undo() {
+        var lastEntry = Array.from(document.querySelectorAll("#scoretable .scoreentry")).pop();
+        if (lastEntry) {
+            lastEntry.remove();
+            gameScore.rounds.pop();
+            tallyTotals();
+        }
+    }
+
+    function refreshAll() {
+
+    }
+
+    function initFromSessionScore(sessionScoreEncoded) {
+        var sessionScore = JSON.parse(atob(sessionScoreEncoded));
+        gameScore = structuredClone(sessionScore);
+        for (round of gameScore.rounds) {
+            newScoreRow(round);
+            tallyTotals();
+        }
+    }
+
+    var sessionScore = "{{ session_score }}";
+
+    if (sessionScore) {
+        initFromSessionScore(sessionScore);
+    } else {
+        gameScore = createGameScoreObject();
+    }
+</script>
+</html>

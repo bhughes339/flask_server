@@ -153,6 +153,7 @@ function startEventHandler() {
     var listenUrl = "{{ url_for('.group_event_stream') }}?room=" + groupRoom;
 	groupListen = new EventSource(listenUrl);
 	groupListen.onmessage = function(event) {
+        console.log(Date.now());
         var pushedId = parseInt(event.data);
 		if ($('#groupenable').prop("checked")) {
 			var needPush = (pushedId !== pushedStream);

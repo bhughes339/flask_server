@@ -9,6 +9,24 @@
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+function genreToggle() {
+    if($('.genretoggle').is(":checked"))   
+        $(".genres").show();
+    else
+        $(".genres").hide();
+}
+function popToggle() {
+    if($('.poptoggle').is(":checked"))
+        $(".pop").show();
+    else
+        $(".pop").hide();
+}
+$(document).ready(function() {
+    genreToggle();
+    popToggle();
+});
+    </script>
     <style>
         body {
             margin-top: 10px;
@@ -22,27 +40,44 @@
         .nav-link.active {
             background-color: rgb(40, 167, 69) !important;
         }
+        .genres {
+            color: #999999;
+        }
+        .circle {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1px solid;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <ul class="nav nav-pills">
             <li class="nav-item">
-                <a class="nav-link active" data-toggle="pill" href="#menushort">1 Month</a>
+                <a class="nav-link active" data-toggle="pill" href="#menushort" title="~4 weeks">Recent</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-toggle="pill" href="#menumedium">6 Months</a>
+                <a class="nav-link" data-toggle="pill" href="#menumedium" title="~6 months">Medium-term</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-toggle="pill" href="#menulong">All-Time</a>
+                <a class="nav-link" data-toggle="pill" href="#menulong" title="several years">Long-term</a>
             </li>
         </ul>
         <div class="tab-content">{{ top_list|safe }}</div>
-        {% if top_type == 'artists' %}
-        <a href="{{ url_for('.get_top_tracks') }}">View top tracks</a>
-        {% elif top_type == 'tracks' %}
-        <a href="{{ url_for('.get_top_artists') }}">View top artists</a>
-        {% endif %}
+        <div id="options" style="padding-top: 20px;">
+            {% if top_type == 'artists' %}
+            <a href="{{ url_for('.get_top_tracks') }}">View top tracks</a>
+            {% elif top_type == 'tracks' %}
+            <a href="{{ url_for('.get_top_artists') }}">View top artists</a>
+            {% endif %}
+            <br>
+            <input class="genretoggle" type="checkbox" name="genretoggle" value="0" onchange="genreToggle()"/> Show genres
+            <br>
+            <input class="poptoggle" type="checkbox" name="poptoggle" value="0" onchange="popToggle()"/> Show popularity
+        </div>
     </div>
 </body>
 </html>

@@ -1,0 +1,14 @@
+<head>
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+</head>
+
+<body>
+  <video id="player" playsinline controls>
+    <source src="{{ video_url }}" type="video/{{ video_ext }}" />
+  </video>
+</body>
+
+<script>
+  const player = new Plyr('#player');
+</script>
